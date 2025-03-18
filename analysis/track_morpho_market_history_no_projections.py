@@ -324,7 +324,7 @@ def main():
     print(f"\nData saved to {csv_filename}")
     
     # Create a figure with multiple subplots
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(16, 12), gridspec_kw={'height_ratios': [2, 1]})
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(16, 14), gridspec_kw={'height_ratios': [2, 1]})
     
     # Plot 1: Supply and Borrow Assets (Historical)
     ax1.plot(df['date'], df['totalSupplyAssets_formatted'], 'b-', linewidth=2.5, label='Total Supply (USDC)')
@@ -345,7 +345,7 @@ def main():
     # Add labels and title
     ax1.set_xlabel('Date')
     ax1.set_ylabel('Amount (USDC)')
-    ax1.set_title('cbBTC/USDC Market - Supply and Borrow Assets Over Time', fontsize=16)
+    ax1.set_title('cbBTC/USDC Market - Supply and Borrow Assets Over Time', fontsize=16, pad=15)
     ax1.legend(loc='upper left')
     ax1.grid(True)
     
@@ -380,7 +380,7 @@ def main():
     # Add labels
     ax2.set_xlabel('Date')
     ax2.set_ylabel('Utilization Rate (%)')
-    ax2.set_title('cbBTC/USDC Market - Utilization Rate Over Time', fontsize=16)
+    ax2.set_title('cbBTC/USDC Market - Utilization Rate Over Time', fontsize=16, pad=15)
     ax2.grid(True)
     
     # Add annotation for latest utilization rate
@@ -399,7 +399,7 @@ def main():
     
     # Adjust layout and spacing to make room for rotated labels
     plt.tight_layout(pad=3.0, rect=[0, 0.03, 1, 0.97])
-    fig.subplots_adjust(hspace=0.4)  # Increase spacing between subplots
+    fig.subplots_adjust(hspace=0.6)  # Increase spacing between subplots (increased from 0.4 to 0.6)
     
     # Save the plot
     plt_filename = os.path.join(png_dir, "morpho_market_history_no_projections.png")
