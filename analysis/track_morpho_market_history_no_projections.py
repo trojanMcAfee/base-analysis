@@ -252,6 +252,14 @@ def main():
     if not os.path.exists(DATA_DIR):
         os.makedirs(DATA_DIR)
     
+    # Create subdirectories for PNG and SVG files
+    png_dir = os.path.join(PLOTS_DIR, "png")
+    svg_dir = os.path.join(PLOTS_DIR, "svg")
+    if not os.path.exists(png_dir):
+        os.makedirs(png_dir)
+    if not os.path.exists(svg_dir):
+        os.makedirs(svg_dir)
+    
     # Set the style for plots
     sns.set_style("whitegrid")
     plt.rcParams.update({'font.size': 12})
@@ -394,12 +402,12 @@ def main():
     fig.subplots_adjust(hspace=0.4)  # Increase spacing between subplots
     
     # Save the plot
-    plt_filename = os.path.join(PLOTS_DIR, "morpho_market_history_no_projections.png")
+    plt_filename = os.path.join(png_dir, "morpho_market_history_no_projections.png")
     plt.savefig(plt_filename, dpi=300, bbox_inches='tight')
     print(f"Plot saved to {plt_filename}")
     
     # Save as a high-quality SVG for vector format
-    svg_filename = os.path.join(PLOTS_DIR, "morpho_market_history_no_projections.svg")
+    svg_filename = os.path.join(svg_dir, "morpho_market_history_no_projections.svg")
     plt.savefig(svg_filename, format='svg', bbox_inches='tight')
     print(f"Vector plot saved to {svg_filename}")
     

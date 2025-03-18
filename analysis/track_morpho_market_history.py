@@ -253,6 +253,14 @@ def main():
     if not os.path.exists(DATA_DIR):
         os.makedirs(DATA_DIR)
     
+    # Create subdirectories for PNG and SVG files
+    png_dir = os.path.join(PLOTS_DIR, "png")
+    svg_dir = os.path.join(PLOTS_DIR, "svg")
+    if not os.path.exists(png_dir):
+        os.makedirs(png_dir)
+    if not os.path.exists(svg_dir):
+        os.makedirs(svg_dir)
+    
     # Set the style for plots
     sns.set_style("whitegrid")
     plt.rcParams.update({'font.size': 12})
@@ -302,7 +310,7 @@ def main():
     df_nonzero = df[df['totalSupplyAssets_formatted'] > 0].copy()
     
     if len(df_nonzero) >= 10:  # Need a reasonable number of data points
-        print("\n=== Calculating Growth Ratios and Projections ===")
+        print("\n=== Calculating Growth and Linear Projections ===")
         
         # Use only the most recent 3 months of data to calculate growth rate
         # This gives a more realistic projection than using the entire history
@@ -312,32 +320,34 @@ def main():
         recent_df = df_nonzero[df_nonzero['date'] >= three_months_ago].copy()
         
         if len(recent_df) >= 5:  # Need at least a few points in the recent period
-            # Calculate monthly growth rates based on recent data
+            # Calculate total growth over the measurement period
             first_supply = recent_df.iloc[0]['totalSupplyAssets_formatted']
             last_supply = recent_df.iloc[-1]['totalSupplyAssets_formatted']
             first_borrow = recent_df.iloc[0]['totalBorrowAssets_formatted']
             last_borrow = recent_df.iloc[-1]['totalBorrowAssets_formatted']
             
-            # Calculate time difference in months
+            # Calculate time difference in days
             time_diff_days = (recent_df.iloc[-1]['date'] - recent_df.iloc[0]['date']).days
-            time_diff_months = time_diff_days / 30.0
             
-            # Calculate compound monthly growth rate: (End/Start)^(1/months) - 1
-            if time_diff_months > 0:
-                supply_monthly_growth = (last_supply / first_supply) ** (1 / time_diff_months) - 1
-                borrow_monthly_growth = (last_borrow / first_borrow) ** (1 / time_diff_months) - 1
+            if time_diff_days > 0:
+                # Calculate daily absolute growth (not percentage)
+                supply_daily_growth = (last_supply - first_supply) / time_diff_days
+                borrow_daily_growth = (last_borrow - first_borrow) / time_diff_days
                 
-                # Limit growth rates to prevent unrealistic projections
-                # Cap at 30% monthly growth (which is still very aggressive)
-                supply_monthly_growth = min(supply_monthly_growth, 0.30)
-                borrow_monthly_growth = min(borrow_monthly_growth, 0.30)
+                # Cap the daily growth to prevent extremely aggressive projections
+                # This is equivalent to approximately the same cap as before but expressed as daily growth
+                max_daily_growth_supply = first_supply * 0.008  # ~30% monthly when expressed as daily
+                max_daily_growth_borrow = first_borrow * 0.008
+                
+                supply_daily_growth = min(supply_daily_growth, max_daily_growth_supply)
+                borrow_daily_growth = min(borrow_daily_growth, max_daily_growth_borrow)
                 
                 # Convert to annual rates for display
-                supply_annual_growth = ((1 + supply_monthly_growth) ** 12 - 1) * 100
-                borrow_annual_growth = ((1 + borrow_monthly_growth) ** 12 - 1) * 100
+                supply_annual_growth = (supply_daily_growth * 365 / first_supply) * 100
+                borrow_annual_growth = (borrow_daily_growth * 365 / first_borrow) * 100
                 
-                print(f"Recent Monthly Supply Growth Rate: {supply_monthly_growth:.2%}")
-                print(f"Recent Monthly Borrow Growth Rate: {borrow_monthly_growth:.2%}")
+                print(f"Daily Supply Growth Amount: {supply_daily_growth:,.2f} USDC")
+                print(f"Daily Borrow Growth Amount: {borrow_daily_growth:,.2f} USDC")
                 print(f"Projected Annual Supply Growth Rate: {supply_annual_growth:.2f}%")
                 print(f"Projected Annual Borrow Growth Rate: {borrow_annual_growth:.2f}%")
                 
@@ -351,23 +361,18 @@ def main():
                 proj_df = pd.DataFrame()
                 proj_df['date'] = future_dates
                 
-                # Apply compound growth to initial values
+                # Start with initial values
                 initial_supply = df.iloc[-1]['totalSupplyAssets_formatted']
                 initial_borrow = df.iloc[-1]['totalBorrowAssets_formatted']
                 
-                # Calculate growth factor for each 2-week period
-                # For 2 weeks: (1 + monthly_rate)^(2/4.3) since 4.3 weeks ≈ 1 month
-                biweekly_supply_factor = (1 + supply_monthly_growth) ** (14 / 30.0)
-                biweekly_borrow_factor = (1 + borrow_monthly_growth) ** (14 / 30.0)
-                
-                # Project values
+                # Project values using linear growth
                 proj_df['totalSupplyAssets_formatted'] = [
-                    initial_supply * (biweekly_supply_factor ** (i+1))
+                    initial_supply + (supply_daily_growth * 14 * (i+1))  # Add fixed amount for each period
                     for i in range(len(future_dates))
                 ]
                 
                 proj_df['totalBorrowAssets_formatted'] = [
-                    initial_borrow * (biweekly_borrow_factor ** (i+1))
+                    initial_borrow + (borrow_daily_growth * 14 * (i+1))
                     for i in range(len(future_dates))
                 ]
                 
@@ -383,7 +388,7 @@ def main():
                 proj_display['Available Liquidity (USDC)'] = proj_display['availableLiquidity_formatted'].map(lambda x: f"{x:,.2f}")
                 proj_display['Utilization Rate (%)'] = proj_display['utilization_rate'].map(lambda x: f"{x:.2f}%")
                 
-                print("\n=== Projected cbBTC/USDC Market Data (Next Year) ===")
+                print("\n=== Projected cbBTC/USDC Market Data (Next Year) - Linear Model ===")
                 print(proj_display[['Date', 'Total Supply (USDC)', 'Total Borrow (USDC)', 'Available Liquidity (USDC)', 'Utilization Rate (%)']].to_string(index=False))
             else:
                 print("Time difference too small for meaningful rate calculation.")
@@ -476,7 +481,7 @@ def main():
     # Add labels and title
     ax.set_xlabel('Date')
     ax.set_ylabel('Amount (USDC)')
-    ax.set_title('cbBTC/USDC Market - Supply, Borrow and Projections', fontsize=16)
+    ax.set_title('cbBTC/USDC Market - Supply, Borrow and Linear Projections', fontsize=16)
     ax.legend(loc='upper left')
     ax.grid(True)
     
@@ -488,14 +493,29 @@ def main():
     plt.tight_layout(pad=3.0, rect=[0, 0.03, 1, 0.97])
     
     # Save the plot
-    plt_filename = os.path.join(PLOTS_DIR, "morpho_market_history_with_projections.png")
+    plt_filename = os.path.join(png_dir, "morpho_market_history_linear_projections.png")
     plt.savefig(plt_filename, dpi=300, bbox_inches='tight')
     print(f"Plot saved to {plt_filename}")
     
     # Save as a high-quality SVG for vector format
-    svg_filename = os.path.join(PLOTS_DIR, "morpho_market_history_with_projections.svg")
+    svg_filename = os.path.join(svg_dir, "morpho_market_history_linear_projections.svg")
     plt.savefig(svg_filename, format='svg', bbox_inches='tight')
     print(f"Vector plot saved to {svg_filename}")
+    
+    # Add a clear summary of monthly growth rates before showing the plot
+    if proj_df is not None:
+        # Calculate monthly growth rates
+        monthly_supply_growth_amount = supply_daily_growth * 30
+        monthly_supply_growth_rate = (monthly_supply_growth_amount / initial_supply) * 100
+        
+        monthly_borrow_growth_amount = borrow_daily_growth * 30
+        monthly_borrow_growth_rate = (monthly_borrow_growth_amount / initial_borrow) * 100
+        
+        print("\n=== Monthly Growth Rate Summary ===")
+        print(f"Supply Monthly Growth Amount: {monthly_supply_growth_amount:,.2f} USDC")
+        print(f"Supply Monthly Growth Rate: {monthly_supply_growth_rate:.2f}%")
+        print(f"Borrow Monthly Growth Amount: {monthly_borrow_growth_amount:,.2f} USDC")
+        print(f"Borrow Monthly Growth Rate: {monthly_borrow_growth_rate:.2f}%")
     
     # Only show the plot if explicitly requested
     if args.show_plot:
@@ -504,7 +524,8 @@ def main():
     else:
         # Close the plot to free memory and ensure termination
         plt.close(fig)
-        print("\nAnalysis complete!")
+    
+    print("\nAnalysis complete!")
 
 if __name__ == "__main__":
     main() 
