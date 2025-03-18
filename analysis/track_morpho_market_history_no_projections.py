@@ -316,7 +316,7 @@ def main():
     print(f"\nData saved to {csv_filename}")
     
     # Create a figure with multiple subplots
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(14, 12), gridspec_kw={'height_ratios': [2, 1]})
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(16, 12), gridspec_kw={'height_ratios': [2, 1]})
     
     # Plot 1: Supply and Borrow Assets (Historical)
     ax1.plot(df['date'], df['totalSupplyAssets_formatted'], 'b-', linewidth=2.5, label='Total Supply (USDC)')
@@ -329,7 +329,10 @@ def main():
     
     # Format the date axis
     ax1.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
-    ax1.xaxis.set_major_locator(mdates.MonthLocator())
+    ax1.xaxis.set_major_locator(mdates.MonthLocator(interval=2))  # Show every other month
+    
+    # Rotate date labels to prevent overlap
+    plt.setp(ax1.get_xticklabels(), rotation=45, ha='right')
     
     # Add labels and title
     ax1.set_xlabel('Date')
@@ -361,7 +364,10 @@ def main():
     
     # Format the date axis
     ax2.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
-    ax2.xaxis.set_major_locator(mdates.MonthLocator())
+    ax2.xaxis.set_major_locator(mdates.MonthLocator(interval=2))  # Show every other month
+    
+    # Rotate date labels to prevent overlap
+    plt.setp(ax2.get_xticklabels(), rotation=45, ha='right')
     
     # Add labels
     ax2.set_xlabel('Date')
@@ -379,13 +385,13 @@ def main():
     max_util = max(df['utilization_rate']) * 1.1
     ax2.set_ylim(0, min(max_util, 105))  # Cap at 105% for visualization
     
-    # Adjust layout and spacing
-    plt.tight_layout()
-    fig.subplots_adjust(hspace=0.3)
-    
     # Add a timestamp to the bottom of the figure
-    plt.figtext(0.5, 0.01, f"Generated on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+    plt.figtext(0.5, 0.02, f"Generated on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
                ha="center", fontsize=10, bbox={"facecolor":"white", "alpha":0.7, "pad":5})
+    
+    # Adjust layout and spacing to make room for rotated labels
+    plt.tight_layout(pad=3.0, rect=[0, 0.03, 1, 0.97])
+    fig.subplots_adjust(hspace=0.4)  # Increase spacing between subplots
     
     # Save the plot
     plt_filename = os.path.join(PLOTS_DIR, "morpho_market_history_no_projections.png")

@@ -426,7 +426,7 @@ def main():
     print(f"\nData saved to {csv_filename}")
     
     # Create a figure for plotting
-    fig, ax = plt.figure(figsize=(14, 8)), plt.gca()
+    fig, ax = plt.figure(figsize=(16, 8)), plt.gca()
     
     # Plot historical data
     ax.plot(df['date'], df['totalSupplyAssets_formatted'], 'b-', linewidth=2.5, label='Total Supply (USDC)')
@@ -468,7 +468,10 @@ def main():
     
     # Format the date axis
     ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
-    ax.xaxis.set_major_locator(mdates.MonthLocator())
+    ax.xaxis.set_major_locator(mdates.MonthLocator(interval=2))  # Show every other month
+    
+    # Rotate date labels to prevent overlap
+    plt.setp(ax.get_xticklabels(), rotation=45, ha='right')
     
     # Add labels and title
     ax.set_xlabel('Date')
@@ -478,8 +481,11 @@ def main():
     ax.grid(True)
     
     # Add a timestamp to the bottom of the figure
-    plt.figtext(0.5, 0.01, f"Generated on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+    plt.figtext(0.5, 0.02, f"Generated on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
                ha="center", fontsize=10, bbox={"facecolor":"white", "alpha":0.7, "pad":5})
+    
+    # Adjust layout to make room for rotated labels
+    plt.tight_layout(pad=3.0, rect=[0, 0.03, 1, 0.97])
     
     # Save the plot
     plt_filename = os.path.join(PLOTS_DIR, "morpho_market_history_with_projections.png")
