@@ -2,6 +2,8 @@
 
 import os
 import time
+import argparse
+import pickle
 from datetime import datetime
 from web3 import Web3
 from dotenv import load_dotenv
@@ -24,6 +26,10 @@ MARKET_ID = "0x9103c3b4e834476c9a62ea009ba2c884ee42e94e6e314a26f04d312434191836"
 # Block range
 START_BLOCK = 19326981  # Market creation block
 END_BLOCK = 27750945    # Specified end block
+
+# Cache file path
+CACHE_DIR = "cache"
+CACHE_FILE = os.path.join(CACHE_DIR, "morpho_market_data.pickle")
 
 # ABI for just the market function we need
 ABI = [
@@ -103,6 +109,53 @@ def generate_block_numbers(w3, start_block, end_block):
     print(f"Generated {len(blocks)} block numbers to query")
     return blocks
 
+def load_cached_data():
+    """Load data from cache if available"""
+    if os.path.exists(CACHE_FILE):
+        print(f"Loading cached data from {CACHE_FILE}...")
+        try:
+            with open(CACHE_FILE, 'rb') as f:
+                cached_data = pickle.load(f)
+                
+            # Verify the cache contains the expected structure
+            if (isinstance(cached_data, dict) and 
+                'start_block' in cached_data and 
+                'end_block' in cached_data and 
+                'market_data' in cached_data and 
+                cached_data['start_block'] == START_BLOCK and 
+                cached_data['end_block'] == END_BLOCK):
+                
+                print(f"Cache hit! Using data for blocks {START_BLOCK} to {END_BLOCK}")
+                return cached_data['market_data']
+            else:
+                print("Cache exists but doesn't match the current block range. Will query fresh data.")
+                return None
+        except Exception as e:
+            print(f"Error loading cache: {e}")
+            return None
+    else:
+        print("No cache file found.")
+        return None
+
+def save_to_cache(market_data):
+    """Save data to cache file"""
+    if not os.path.exists(CACHE_DIR):
+        os.makedirs(CACHE_DIR)
+        
+    cache_data = {
+        'start_block': START_BLOCK,
+        'end_block': END_BLOCK,
+        'market_data': market_data,
+        'timestamp': datetime.now().isoformat()
+    }
+    
+    try:
+        with open(CACHE_FILE, 'wb') as f:
+            pickle.dump(cache_data, f)
+        print(f"Data saved to cache: {CACHE_FILE}")
+    except Exception as e:
+        print(f"Error saving to cache: {e}")
+
 def query_market_data(w3, morpho_contract, block_number):
     """Query market data at a specific block number"""
     try:
@@ -144,7 +197,49 @@ def query_market_data(w3, morpho_contract, block_number):
         print(f"Error querying block {block_number}: {e}")
         return None
 
+def fetch_market_data(w3, morpho_contract, use_cache=True, force_refresh=False):
+    """Fetch market data, using cache if available"""
+    # Try to load from cache first
+    market_data = None
+    if use_cache and not force_refresh:
+        market_data = load_cached_data()
+    
+    # If cache miss or forced refresh, query the blockchain
+    if market_data is None:
+        # Generate block numbers to query
+        block_numbers = generate_block_numbers(w3, START_BLOCK, END_BLOCK)
+        
+        # Query market data for each block
+        market_data = []
+        
+        print("\nQuerying market data at each block...")
+        for i, block in enumerate(block_numbers):
+            print(f"Querying block {block} ({i+1}/{len(block_numbers)})...")
+            data = query_market_data(w3, morpho_contract, block)
+            if data:
+                market_data.append(data)
+            # Small delay to avoid rate limiting
+            time.sleep(0.5)
+        
+        # Save to cache for future use
+        if market_data:
+            save_to_cache(market_data)
+    
+    return market_data
+
+def parse_args():
+    """Parse command line arguments"""
+    parser = argparse.ArgumentParser(description='Track Morpho market data over time')
+    parser.add_argument('--force-refresh', action='store_true', 
+                      help='Force refresh data from the blockchain instead of using cache')
+    parser.add_argument('--no-cache', action='store_true',
+                      help='Disable caching (will not read or write cache)')
+    return parser.parse_args()
+
 def main():
+    # Parse command line arguments
+    args = parse_args()
+    
     # Set the style for plots
     sns.set_style("whitegrid")
     plt.rcParams.update({'font.size': 12})
@@ -162,20 +257,13 @@ def main():
     # Create contract instance
     morpho_contract = w3.eth.contract(address=MORPHO_ADDRESS, abi=ABI)
     
-    # Generate block numbers to query
-    block_numbers = generate_block_numbers(w3, START_BLOCK, END_BLOCK)
-    
-    # Query market data for each block
-    market_data = []
-    
-    print("\nQuerying market data at each block...")
-    for i, block in enumerate(block_numbers):
-        print(f"Querying block {block} ({i+1}/{len(block_numbers)})...")
-        data = query_market_data(w3, morpho_contract, block)
-        if data:
-            market_data.append(data)
-        # Small delay to avoid rate limiting
-        time.sleep(0.5)
+    # Fetch data (from cache if available)
+    market_data = fetch_market_data(
+        w3, 
+        morpho_contract, 
+        use_cache=not args.no_cache, 
+        force_refresh=args.force_refresh
+    )
     
     if not market_data:
         print("No data was collected. Exiting.")
