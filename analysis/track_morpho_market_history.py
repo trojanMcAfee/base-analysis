@@ -431,12 +431,12 @@ def main():
     print(f"\nData saved to {csv_filename}")
     
     # Create a figure for plotting
-    fig, ax = plt.figure(figsize=(16, 8)), plt.gca()
+    fig, ax = plt.figure(figsize=(18, 10)), plt.gca()
     
     # Plot historical data
-    ax.plot(df['date'], df['totalSupplyAssets_formatted'], 'b-', linewidth=2.5, label='Total Supply (USDC)')
-    ax.plot(df['date'], df['totalBorrowAssets_formatted'], 'r-', linewidth=2.5, label='Total Borrow (USDC)')
-    ax.plot(df['date'], df['availableLiquidity_formatted'], 'g-', linewidth=2, alpha=0.7, label='Available Liquidity (USDC)')
+    ax.plot(df['date'], df['totalSupplyAssets_formatted'], 'b-', linewidth=3, label='_nolegend_')
+    ax.plot(df['date'], df['totalBorrowAssets_formatted'], 'r-', linewidth=3, label='_nolegend_')
+    ax.plot(df['date'], df['availableLiquidity_formatted'], 'g-', linewidth=2.5, alpha=0.7, label='_nolegend_')
     
     # Add projections if available
     if proj_df is not None:
@@ -445,27 +445,118 @@ def main():
         ymin, ymax = ax.get_ylim()
         ax.axvline(x=last_date, color='gray', linestyle='--', alpha=0.7)
         
-        # Plot projected data with dotted lines
-        ax.plot(proj_df['date'], proj_df['totalSupplyAssets_formatted'], 'b--', linewidth=2, label='Projected Supply (USDC)')
-        ax.plot(proj_df['date'], proj_df['totalBorrowAssets_formatted'], 'r--', linewidth=2, label='Projected Borrow (USDC)')
-        ax.plot(proj_df['date'], proj_df['availableLiquidity_formatted'], 'g--', linewidth=1.5, alpha=0.7, label='Projected Liquidity (USDC)')
+        # ---- Bullish Projection (Green) ----
+        # Plot projected data with dotted lines - use green for the bullish projection
+        ax.plot(proj_df['date'], proj_df['totalSupplyAssets_formatted'], 'g--', linewidth=2.5, marker='o', markersize=4, markevery=3, label='Bullish')
+        ax.plot(proj_df['date'], proj_df['totalBorrowAssets_formatted'], 'g--', linewidth=2.5, marker='o', markersize=4, markevery=3, label='_nolegend_')
+        ax.plot(proj_df['date'], proj_df['availableLiquidity_formatted'], 'g--', linewidth=2, marker='o', markersize=4, markevery=3, alpha=0.7, label='_nolegend_')
         
-        # Add annotation for projected end values
+        # Add annotation for bullish projected end values
         proj_end = proj_df.iloc[-1]
-        ax.annotate(f"Proj. Supply: {proj_end['totalSupplyAssets_formatted']:,.2f}",
+        ax.annotate(f"Bullish Supply: {proj_end['totalSupplyAssets_formatted']:,.2f}",
                     xy=(proj_end['date'], proj_end['totalSupplyAssets_formatted']),
-                    xytext=(10, 10), textcoords='offset points',
-                    bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="blue", alpha=0.8))
+                    xytext=(15, 15), textcoords='offset points', fontsize=11,
+                    bbox=dict(boxstyle="round,pad=0.4", fc="white", ec="green", alpha=0.9))
         
-        ax.annotate(f"Proj. Borrow: {proj_end['totalBorrowAssets_formatted']:,.2f}",
+        ax.annotate(f"Bullish Borrow: {proj_end['totalBorrowAssets_formatted']:,.2f}",
                     xy=(proj_end['date'], proj_end['totalBorrowAssets_formatted']),
-                    xytext=(10, -20), textcoords='offset points',
-                    bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="red", alpha=0.8))
+                    xytext=(15, -25), textcoords='offset points', fontsize=11,
+                    bbox=dict(boxstyle="round,pad=0.4", fc="white", ec="green", alpha=0.9))
         
-        ax.annotate(f"Proj. Available: {proj_end['availableLiquidity_formatted']:,.2f}",
+        ax.annotate(f"Bullish Liquidity: {proj_end['availableLiquidity_formatted']:,.2f}",
                     xy=(proj_end['date'], proj_end['availableLiquidity_formatted']),
-                    xytext=(10, 10), textcoords='offset points',
-                    bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="green", alpha=0.8))
+                    xytext=(15, 15), textcoords='offset points', fontsize=11,
+                    bbox=dict(boxstyle="round,pad=0.4", fc="white", ec="green", alpha=0.9))
+        
+        # ---- Neutral Projection (Yellow) ----
+        # Create neutral projections dataframe (50% of the growth rate)
+        half_rate_df = pd.DataFrame()
+        half_rate_df['date'] = future_dates
+        
+        # Calculate neutral growth
+        supply_daily_growth_half = supply_daily_growth * 0.5
+        borrow_daily_growth_half = borrow_daily_growth * 0.5
+        
+        # Project values using linear growth at half rate
+        half_rate_df['totalSupplyAssets_formatted'] = [
+            initial_supply + (supply_daily_growth_half * 14 * (i+1))
+            for i in range(len(future_dates))
+        ]
+        
+        half_rate_df['totalBorrowAssets_formatted'] = [
+            initial_borrow + (borrow_daily_growth_half * 14 * (i+1))
+            for i in range(len(future_dates))
+        ]
+        
+        # Calculate derived metrics
+        half_rate_df['availableLiquidity_formatted'] = half_rate_df['totalSupplyAssets_formatted'] - half_rate_df['totalBorrowAssets_formatted']
+        
+        # Plot neutral projections with yellow dotted lines
+        ax.plot(half_rate_df['date'], half_rate_df['totalSupplyAssets_formatted'], 'y--', linewidth=2.5, marker='s', markersize=4, markevery=3, label='Neutral')
+        ax.plot(half_rate_df['date'], half_rate_df['totalBorrowAssets_formatted'], 'y--', linewidth=2.5, marker='s', markersize=4, markevery=3, label='_nolegend_')
+        ax.plot(half_rate_df['date'], half_rate_df['availableLiquidity_formatted'], 'y--', linewidth=2, marker='s', markersize=4, markevery=3, alpha=0.7, label='_nolegend_')
+        
+        # Add annotation for neutral projected end values
+        half_rate_end = half_rate_df.iloc[-1]
+        ax.annotate(f"Neutral Supply: {half_rate_end['totalSupplyAssets_formatted']:,.2f}",
+                    xy=(half_rate_end['date'], half_rate_end['totalSupplyAssets_formatted']),
+                    xytext=(15, -60), textcoords='offset points', fontsize=11,
+                    bbox=dict(boxstyle="round,pad=0.4", fc="white", ec="yellow", alpha=0.9))
+        
+        ax.annotate(f"Neutral Borrow: {half_rate_end['totalBorrowAssets_formatted']:,.2f}",
+                    xy=(half_rate_end['date'], half_rate_end['totalBorrowAssets_formatted']),
+                    xytext=(15, -90), textcoords='offset points', fontsize=11,
+                    bbox=dict(boxstyle="round,pad=0.4", fc="white", ec="yellow", alpha=0.9))
+        
+        ax.annotate(f"Neutral Liquidity: {half_rate_end['availableLiquidity_formatted']:,.2f}",
+                    xy=(half_rate_end['date'], half_rate_end['availableLiquidity_formatted']),
+                    xytext=(15, -50), textcoords='offset points', fontsize=11,
+                    bbox=dict(boxstyle="round,pad=0.4", fc="white", ec="yellow", alpha=0.9))
+        
+        # ---- Bearish Projection (Red) ----
+        # Create bearish projections dataframe (10% of the growth rate)
+        low_rate_df = pd.DataFrame()
+        low_rate_df['date'] = future_dates
+        
+        # Calculate bearish growth
+        supply_daily_growth_low = supply_daily_growth * 0.1
+        borrow_daily_growth_low = borrow_daily_growth * 0.1
+        
+        # Project values using linear growth at low rate
+        low_rate_df['totalSupplyAssets_formatted'] = [
+            initial_supply + (supply_daily_growth_low * 14 * (i+1))
+            for i in range(len(future_dates))
+        ]
+        
+        low_rate_df['totalBorrowAssets_formatted'] = [
+            initial_borrow + (borrow_daily_growth_low * 14 * (i+1))
+            for i in range(len(future_dates))
+        ]
+        
+        # Calculate derived metrics
+        low_rate_df['availableLiquidity_formatted'] = low_rate_df['totalSupplyAssets_formatted'] - low_rate_df['totalBorrowAssets_formatted']
+        
+        # Plot bearish projections with red dotted lines
+        ax.plot(low_rate_df['date'], low_rate_df['totalSupplyAssets_formatted'], 'r--', linewidth=2.5, marker='^', markersize=4, markevery=3, label='Bearish')
+        ax.plot(low_rate_df['date'], low_rate_df['totalBorrowAssets_formatted'], 'r--', linewidth=2.5, marker='^', markersize=4, markevery=3, label='_nolegend_')
+        ax.plot(low_rate_df['date'], low_rate_df['availableLiquidity_formatted'], 'r--', linewidth=2, marker='^', markersize=4, markevery=3, alpha=0.7, label='_nolegend_')
+        
+        # Add annotation for bearish projected end values
+        low_rate_end = low_rate_df.iloc[-1]
+        ax.annotate(f"Bearish Supply: {low_rate_end['totalSupplyAssets_formatted']:,.2f}",
+                    xy=(low_rate_end['date'], low_rate_end['totalSupplyAssets_formatted']),
+                    xytext=(-240, 60), textcoords='offset points', fontsize=11,
+                    bbox=dict(boxstyle="round,pad=0.4", fc="white", ec="red", alpha=0.9))
+        
+        ax.annotate(f"Bearish Borrow: {low_rate_end['totalBorrowAssets_formatted']:,.2f}",
+                    xy=(low_rate_end['date'], low_rate_end['totalBorrowAssets_formatted']),
+                    xytext=(15, 40), textcoords='offset points', fontsize=11,
+                    bbox=dict(boxstyle="round,pad=0.4", fc="white", ec="red", alpha=0.9))
+        
+        ax.annotate(f"Bearish Liquidity: {low_rate_end['availableLiquidity_formatted']:,.2f}",
+                    xy=(low_rate_end['date'], low_rate_end['availableLiquidity_formatted']),
+                    xytext=(15, 80), textcoords='offset points', fontsize=11,
+                    bbox=dict(boxstyle="round,pad=0.4", fc="white", ec="red", alpha=0.9))
     
     # Fill the area between curves (only for historical data)
     ax.fill_between(df['date'], df['totalBorrowAssets_formatted'], 0, color='red', alpha=0.2)
@@ -479,10 +570,10 @@ def main():
     plt.setp(ax.get_xticklabels(), rotation=45, ha='right')
     
     # Add labels and title
-    ax.set_xlabel('Date')
-    ax.set_ylabel('Amount (USDC)')
-    ax.set_title('cbBTC/USDC Market - Supply, Borrow and Linear Projections', fontsize=16)
-    ax.legend(loc='upper left')
+    ax.set_xlabel('Date', fontsize=14)
+    ax.set_ylabel('Amount (USDC)', fontsize=14)
+    ax.set_title('cbBTC/USDC Market Growth Scenarios: Bullish, Neutral, and Bearish', fontsize=18)
+    ax.legend(loc='upper left', fontsize=12)
     ax.grid(True)
     
     # Add a timestamp to the bottom of the figure
@@ -493,29 +584,56 @@ def main():
     plt.tight_layout(pad=3.0, rect=[0, 0.03, 1, 0.97])
     
     # Save the plot
-    plt_filename = os.path.join(png_dir, "morpho_market_history_linear_projections.png")
+    plt_filename = os.path.join(png_dir, "morpho_market_history_multiple_scenarios.png")
     plt.savefig(plt_filename, dpi=300, bbox_inches='tight')
     print(f"Plot saved to {plt_filename}")
     
     # Save as a high-quality SVG for vector format
-    svg_filename = os.path.join(svg_dir, "morpho_market_history_linear_projections.svg")
+    svg_filename = os.path.join(svg_dir, "morpho_market_history_multiple_scenarios.svg")
     plt.savefig(svg_filename, format='svg', bbox_inches='tight')
     print(f"Vector plot saved to {svg_filename}")
     
     # Add a clear summary of monthly growth rates before showing the plot
     if proj_df is not None:
-        # Calculate monthly growth rates
+        # Calculate monthly growth rates for all scenarios
         monthly_supply_growth_amount = supply_daily_growth * 30
         monthly_supply_growth_rate = (monthly_supply_growth_amount / initial_supply) * 100
         
         monthly_borrow_growth_amount = borrow_daily_growth * 30
         monthly_borrow_growth_rate = (monthly_borrow_growth_amount / initial_borrow) * 100
         
+        # Calculate half rates (50%)
+        monthly_supply_growth_amount_half = monthly_supply_growth_amount * 0.5
+        monthly_supply_growth_rate_half = monthly_supply_growth_rate * 0.5
+        
+        monthly_borrow_growth_amount_half = monthly_borrow_growth_amount * 0.5
+        monthly_borrow_growth_rate_half = monthly_borrow_growth_rate * 0.5
+        
+        # Calculate low rates (10%)
+        monthly_supply_growth_amount_low = monthly_supply_growth_amount * 0.1
+        monthly_supply_growth_rate_low = monthly_supply_growth_rate * 0.1
+        
+        monthly_borrow_growth_amount_low = monthly_borrow_growth_amount * 0.1
+        monthly_borrow_growth_rate_low = monthly_borrow_growth_rate * 0.1
+        
         print("\n=== Monthly Growth Rate Summary ===")
+        print("--- Bullish Scenario ---")
         print(f"Supply Monthly Growth Amount: {monthly_supply_growth_amount:,.2f} USDC")
         print(f"Supply Monthly Growth Rate: {monthly_supply_growth_rate:.2f}%")
         print(f"Borrow Monthly Growth Amount: {monthly_borrow_growth_amount:,.2f} USDC")
         print(f"Borrow Monthly Growth Rate: {monthly_borrow_growth_rate:.2f}%")
+        
+        print("\n--- Neutral Scenario ---")
+        print(f"Supply Monthly Growth Amount: {monthly_supply_growth_amount_half:,.2f} USDC")
+        print(f"Supply Monthly Growth Rate: {monthly_supply_growth_rate_half:.2f}%")
+        print(f"Borrow Monthly Growth Amount: {monthly_borrow_growth_amount_half:,.2f} USDC")
+        print(f"Borrow Monthly Growth Rate: {monthly_borrow_growth_rate_half:.2f}%")
+        
+        print("\n--- Bearish Scenario ---")
+        print(f"Supply Monthly Growth Amount: {monthly_supply_growth_amount_low:,.2f} USDC")
+        print(f"Supply Monthly Growth Rate: {monthly_supply_growth_rate_low:.2f}%")
+        print(f"Borrow Monthly Growth Amount: {monthly_borrow_growth_amount_low:,.2f} USDC")
+        print(f"Borrow Monthly Growth Rate: {monthly_borrow_growth_rate_low:.2f}%")
     
     # Only show the plot if explicitly requested
     if args.show_plot:
