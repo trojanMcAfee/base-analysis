@@ -234,6 +234,8 @@ def parse_args():
                       help='Force refresh data from the blockchain instead of using cache')
     parser.add_argument('--no-cache', action='store_true',
                       help='Disable caching (will not read or write cache)')
+    parser.add_argument('--show-plot', action='store_true',
+                      help='Display the plot window (default: only save to file)')
     return parser.parse_args()
 
 def main():
@@ -243,6 +245,11 @@ def main():
     # Set the style for plots
     sns.set_style("whitegrid")
     plt.rcParams.update({'font.size': 12})
+    
+    # Suppress matplotlib warnings and text input context errors
+    import warnings
+    warnings.filterwarnings("ignore", ".*imkxpc_getApplicationProperty.*")
+    warnings.filterwarnings("ignore", ".*_TIPropertyValueIsValid.*")
     
     # Connect to Base network
     w3 = Web3(Web3.HTTPProvider(BASE_RPC_URL))
@@ -380,8 +387,14 @@ def main():
     plt.savefig(svg_filename, format='svg', bbox_inches='tight')
     print(f"Vector plot saved to {svg_filename}")
     
-    # Display the plot (optional if running in an environment that supports it)
-    plt.show()
+    # Only show the plot if explicitly requested
+    if args.show_plot:
+        print("\nDisplaying plot window. Close the window to exit.")
+        plt.show()
+    else:
+        # Close the plot to free memory and ensure termination
+        plt.close(fig)
+        print("\nAnalysis complete!")
 
 if __name__ == "__main__":
     main() 

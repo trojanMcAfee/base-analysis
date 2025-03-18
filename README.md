@@ -10,6 +10,7 @@ This script tracks the historical data of the cbBTC/USDC market on Morpho, retri
 - Generates high-quality plots in both PNG and SVG formats
 - Exports data to CSV for further analysis
 - Caches blockchain query results to avoid redundant API calls
+- Automatic termination after generating plots and tables
 
 ## Installation
 
@@ -41,6 +42,7 @@ python track_morpho_market_history.py
 
 - `--force-refresh`: Force a refresh of the data from the blockchain (ignores cache)
 - `--no-cache`: Disable caching entirely (will not read or write cache)
+- `--show-plot`: Display the plot in a window (by default, plots are only saved to files)
 
 ### Caching System
 
