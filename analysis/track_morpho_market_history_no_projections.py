@@ -28,8 +28,12 @@ START_BLOCK = 19326981  # Market creation block
 END_BLOCK = 27750945    # Specified end block
 
 # Cache file path
-CACHE_DIR = "cache"
+CACHE_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "cache")
 CACHE_FILE = os.path.join(CACHE_DIR, "morpho_market_data.pickle")
+
+# Output paths
+PLOTS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "plots")
+DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "raw-data")
 
 # ABI for just the market function we need
 ABI = [
@@ -229,7 +233,7 @@ def fetch_market_data(w3, morpho_contract, use_cache=True, force_refresh=False):
 
 def parse_args():
     """Parse command line arguments"""
-    parser = argparse.ArgumentParser(description='Track Morpho market data over time')
+    parser = argparse.ArgumentParser(description='Track Morpho market data over time (historical only, no projections)')
     parser.add_argument('--force-refresh', action='store_true', 
                       help='Force refresh data from the blockchain instead of using cache')
     parser.add_argument('--no-cache', action='store_true',
@@ -241,6 +245,12 @@ def parse_args():
 def main():
     # Parse command line arguments
     args = parse_args()
+    
+    # Create output directories if they don't exist
+    if not os.path.exists(PLOTS_DIR):
+        os.makedirs(PLOTS_DIR)
+    if not os.path.exists(DATA_DIR):
+        os.makedirs(DATA_DIR)
     
     # Set the style for plots
     sns.set_style("whitegrid")
@@ -286,7 +296,7 @@ def main():
     # Add a column for available liquidity
     df['availableLiquidity_formatted'] = df['totalSupplyAssets_formatted'] - df['totalBorrowAssets_formatted']
     
-    # Display the table
+    # Display the historical data table
     print("\n=== cbBTC/USDC Market Data at 2-Week Intervals ===")
     display_df = df[['block_number', 'date', 'totalSupplyAssets_formatted', 'totalBorrowAssets_formatted', 'availableLiquidity_formatted', 'utilization_rate']].copy()
     display_df.columns = ['Block', 'Date', 'Total Supply (USDC)', 'Total Borrow (USDC)', 'Available Liquidity (USDC)', 'Utilization Rate (%)']
@@ -301,14 +311,14 @@ def main():
     print(display_df.to_string(index=False))
     
     # Save to CSV
-    csv_filename = "morpho_market_history.csv"
+    csv_filename = os.path.join(DATA_DIR, "morpho_market_history_no_projections.csv")
     df.to_csv(csv_filename, index=False)
     print(f"\nData saved to {csv_filename}")
     
     # Create a figure with multiple subplots
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(14, 12), gridspec_kw={'height_ratios': [2, 1]})
     
-    # Plot 1: Supply and Borrow Assets
+    # Plot 1: Supply and Borrow Assets (Historical)
     ax1.plot(df['date'], df['totalSupplyAssets_formatted'], 'b-', linewidth=2.5, label='Total Supply (USDC)')
     ax1.plot(df['date'], df['totalBorrowAssets_formatted'], 'r-', linewidth=2.5, label='Total Borrow (USDC)')
     ax1.plot(df['date'], df['availableLiquidity_formatted'], 'g-', linewidth=2, alpha=0.7, label='Available Liquidity (USDC)')
@@ -378,12 +388,12 @@ def main():
                ha="center", fontsize=10, bbox={"facecolor":"white", "alpha":0.7, "pad":5})
     
     # Save the plot
-    plt_filename = "morpho_market_history.png"
+    plt_filename = os.path.join(PLOTS_DIR, "morpho_market_history_no_projections.png")
     plt.savefig(plt_filename, dpi=300, bbox_inches='tight')
     print(f"Plot saved to {plt_filename}")
     
     # Save as a high-quality SVG for vector format
-    svg_filename = "morpho_market_history.svg"
+    svg_filename = os.path.join(PLOTS_DIR, "morpho_market_history_no_projections.svg")
     plt.savefig(svg_filename, format='svg', bbox_inches='tight')
     print(f"Vector plot saved to {svg_filename}")
     

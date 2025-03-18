@@ -1,73 +1,111 @@
-# Morpho Market History Tracker
+# Morpho Market Analysis for cbBTC/USDC
 
-This script tracks the historical data of the cbBTC/USDC market on Morpho, retrieving key metrics such as supply, borrow, and utilization rate from the Morpho smart contract on the Base blockchain.
+This project contains a suite of Python scripts for analyzing the historical data and future projections of the cbBTC/USDC market on Morpho's lending protocol on the Base blockchain.
 
-## Features
+## Directory Structure
 
+- `analysis/`: Contains the Python scripts for data collection and analysis
+- `plots/`: Contains the generated visualizations
+- `raw-data/`: Contains the exported CSV data
+- `cache/`: Contains cached blockchain query results to improve performance
+
+## Scripts
+
+### 1. track_morpho_market_history.py
+
+This script retrieves the historical market data for the cbBTC/USDC market on Morpho and generates projections for future market growth. It creates a visualization with both historical data and future projections.
+
+**Features:**
 - Queries the Morpho contract for historical market data at regular intervals
-- Visualizes supply, borrow, and available liquidity over time
-- Tracks utilization rate across the market's lifecycle
-- Generates high-quality plots in both PNG and SVG formats
-- Exports data to CSV for further analysis
-- Caches blockchain query results to avoid redundant API calls
-- Automatic termination after generating plots and tables
+- Calculates growth rates based on recent data (last 3 months)
+- Projects future market metrics (supply, borrow, liquidity) for the next year
+- Visualizes both historical and projected data in a single chart
+- Displays projection annotations at the end of each trend line
+- Exports data to CSV (including projections)
+- Caches blockchain query results for better performance
 
-## Installation
-
-1. Clone this repository:
-```
-git clone <repository-url>
-cd <repository-directory>
-```
-
-2. Install required packages:
-```
-pip install -r requirements.txt
-```
-
-3. Create a `.env` file with your Base RPC URL:
-```
-BASE_RPC_URL=https://your-base-rpc-url.com
-```
-
-## Usage
-
-Run the script with:
-
+**Usage:**
 ```bash
-python track_morpho_market_history.py
+cd analysis
+python3 track_morpho_market_history.py [--force-refresh] [--no-cache] [--show-plot]
 ```
 
-### Command Line Arguments
+### 2. track_morpho_market_history_no_projections.py
 
-- `--force-refresh`: Force a refresh of the data from the blockchain (ignores cache)
+Similar to the above script, but without the projections. This script only retrieves and visualizes historical data without any future projections.
+
+**Features:**
+- Queries the Morpho contract for historical market data at regular intervals
+- Visualizes supply, borrow, available liquidity, and utilization rate over time
+- Exports data to CSV (historical data only)
+- Caches blockchain query results for better performance
+
+**Usage:**
+```bash
+cd analysis
+python3 track_morpho_market_history_no_projections.py [--force-refresh] [--no-cache] [--show-plot]
+```
+
+### 3. get_market_creation_block.py
+
+A utility script to query the Morpho API for information about when the cbBTC/USDC market was created on Base.
+
+**Features:**
+- Queries the Morpho GraphQL API for market creation information
+- Retrieves the creation block number, timestamp, and asset details
+- Displays formatted information about the market
+
+**Usage:**
+```bash
+cd analysis
+python3 get_market_creation_block.py
+```
+
+### 4. query_morpho_market.py
+
+A simple script to query the current state of the cbBTC/USDC market at a specific block number.
+
+**Features:**
+- Connects to the Base blockchain
+- Queries the Morpho contract for market details at a specific block
+- Displays supply, borrow, and other market metrics
+
+**Usage:**
+```bash
+cd analysis
+python3 query_morpho_market.py
+```
+
+## Command Line Arguments
+
+The `track_morpho_market_history.py` and `track_morpho_market_history_no_projections.py` scripts accept these arguments:
+
+- `--force-refresh`: Force refresh data from the blockchain instead of using cache
 - `--no-cache`: Disable caching entirely (will not read or write cache)
-- `--show-plot`: Display the plot in a window (by default, plots are only saved to files)
-
-### Caching System
-
-To avoid repeatedly querying the blockchain API (which can be slow and subject to rate limits), the script includes a caching system:
-
-- On first run, the script queries the blockchain and saves the results to `cache/morpho_market_data.pickle`
-- On subsequent runs, it loads data from the cache file instead of querying the blockchain again
-- The cache is validated to ensure it contains data for the correct block range
-- To force a fresh query, use the `--force-refresh` flag
+- `--show-plot`: Display the plot window (by default, plots are only saved to files)
 
 ## Output Files
 
-The script generates several output files:
+The scripts generate several output files:
 
-- `morpho_market_history.csv`: CSV file containing all market data
-- `morpho_market_history.png`: High-resolution PNG plot of market metrics
-- `morpho_market_history.svg`: Vector SVG plot for high-quality presentations
+- `raw-data/morpho_market_history.csv`: CSV file containing all market data (including projections if available)
+- `plots/morpho_market_history_with_projections.png/svg`: Plot showing historical data with projections
+- `plots/morpho_market_history_no_projections.png/svg`: Plot showing only historical data
 
-## Example Output
+## Requirements
 
-The script produces a visualization showing:
+To run these scripts, you'll need:
+- Python 3.9+
+- Web3.py
+- Pandas
+- Matplotlib
+- Seaborn
+- NumPy
+- Scipy (for the version with projections only)
+- Requests (for the market creation script only)
+- dotenv (for loading environment variables)
 
-- Total supply assets (blue line)
-- Total borrowed assets (red line)
-- Available liquidity (green line)
-- Market utilization rate (purple line)
-
-Additionally, it outputs a table showing these metrics at each queried block number. 
+You'll also need to create a `.env` file with your Base RPC URL:
+```
+BASE_RPC_URL=https://your-base-rpc-url.com
+``` 
