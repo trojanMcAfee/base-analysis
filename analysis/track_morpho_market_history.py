@@ -446,10 +446,11 @@ def main():
         ax.axvline(x=last_date, color='gray', linestyle='--', alpha=0.7)
         
         # ---- Bullish Projection (Green) ----
-        # Plot projected data with dotted lines - use green for the bullish projection
+        # Plot projected data with different line styles - green for bullish projection
         ax.plot(proj_df['date'], proj_df['totalSupplyAssets_formatted'], 'g--', linewidth=2.5, marker='o', markersize=4, markevery=3, label='Bullish')
-        ax.plot(proj_df['date'], proj_df['totalBorrowAssets_formatted'], 'g--', linewidth=2.5, marker='o', markersize=4, markevery=3, label='_nolegend_')
-        ax.plot(proj_df['date'], proj_df['availableLiquidity_formatted'], 'g--', linewidth=2, marker='o', markersize=4, markevery=3, alpha=0.7, label='_nolegend_')
+        ax.plot(proj_df['date'], proj_df['totalBorrowAssets_formatted'], color='g', linewidth=3.0, marker='o', markersize=5, markevery=3, 
+                dashes=[5, 2, 1, 2], label='_nolegend_')  # Very distinctive pattern
+        ax.plot(proj_df['date'], proj_df['availableLiquidity_formatted'], 'g:', linewidth=2, marker='o', markersize=4, markevery=3, alpha=0.7, label='_nolegend_')
         
         # Add annotation for bullish projected end values
         proj_end = proj_df.iloc[-1]
@@ -491,10 +492,11 @@ def main():
         # Calculate derived metrics
         half_rate_df['availableLiquidity_formatted'] = half_rate_df['totalSupplyAssets_formatted'] - half_rate_df['totalBorrowAssets_formatted']
         
-        # Plot neutral projections with yellow dotted lines
+        # Plot neutral projections with yellow lines but distinct patterns
         ax.plot(half_rate_df['date'], half_rate_df['totalSupplyAssets_formatted'], 'y--', linewidth=2.5, marker='s', markersize=4, markevery=3, label='Neutral')
-        ax.plot(half_rate_df['date'], half_rate_df['totalBorrowAssets_formatted'], 'y--', linewidth=2.5, marker='s', markersize=4, markevery=3, label='_nolegend_')
-        ax.plot(half_rate_df['date'], half_rate_df['availableLiquidity_formatted'], 'y--', linewidth=2, marker='s', markersize=4, markevery=3, alpha=0.7, label='_nolegend_')
+        ax.plot(half_rate_df['date'], half_rate_df['totalBorrowAssets_formatted'], color='y', linewidth=3.0, marker='s', markersize=5, markevery=3, 
+                dashes=[5, 2, 1, 2], label='_nolegend_')  # Very distinctive pattern
+        ax.plot(half_rate_df['date'], half_rate_df['availableLiquidity_formatted'], 'y:', linewidth=2, marker='s', markersize=4, markevery=3, alpha=0.7, label='_nolegend_')
         
         # Add annotation for neutral projected end values
         half_rate_end = half_rate_df.iloc[-1]
@@ -536,10 +538,11 @@ def main():
         # Calculate derived metrics
         low_rate_df['availableLiquidity_formatted'] = low_rate_df['totalSupplyAssets_formatted'] - low_rate_df['totalBorrowAssets_formatted']
         
-        # Plot bearish projections with red dotted lines
+        # Plot bearish projections with red lines but distinct patterns
         ax.plot(low_rate_df['date'], low_rate_df['totalSupplyAssets_formatted'], 'r--', linewidth=2.5, marker='^', markersize=4, markevery=3, label='Bearish')
-        ax.plot(low_rate_df['date'], low_rate_df['totalBorrowAssets_formatted'], 'r--', linewidth=2.5, marker='^', markersize=4, markevery=3, label='_nolegend_')
-        ax.plot(low_rate_df['date'], low_rate_df['availableLiquidity_formatted'], 'r--', linewidth=2, marker='^', markersize=4, markevery=3, alpha=0.7, label='_nolegend_')
+        ax.plot(low_rate_df['date'], low_rate_df['totalBorrowAssets_formatted'], color='r', linewidth=3.0, marker='^', markersize=5, markevery=3, 
+                dashes=[5, 2, 1, 2], label='_nolegend_')  # Very distinctive pattern
+        ax.plot(low_rate_df['date'], low_rate_df['availableLiquidity_formatted'], 'r:', linewidth=2, marker='^', markersize=4, markevery=3, alpha=0.7, label='_nolegend_')
         
         # Add annotation for bearish projected end values
         low_rate_end = low_rate_df.iloc[-1]
