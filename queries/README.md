@@ -31,6 +31,21 @@ This script queries the Morpho Blue smart contract directly to get the utilizati
 node utilizationTarget.js
 ```
 
+## borrowRate.js
+
+This script fetches the current borrowing rate for the cbBTC/USDC market from Morpho's GraphQL API.
+
+### Key Features
+- Queries the specified cbBTC/USDC market on Base
+- Displays the current borrowing rate as a percentage
+- Shows when the rate was last updated
+
+### Usage
+
+```bash
+node borrowRate.js
+```
+
 ### Configuration
 
 The script is configured to fetch data for a specific cbBTC/USDC market on Base chain. If you want to query a different market, update the `marketId` variable in the script.
