@@ -59,9 +59,9 @@ const morphoABI = [
 const MORPHO_CONTRACT_ADDRESS = '0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb';
 
 // Function parameters
-const MARKET_ID = '0x8793cf302b8ffd655ab97bd1c695dbd967807e8367a65cb2f4edaf1380ba1bda'; // WETH/USDC market
+const MARKET_ID = '0x9103c3b4e834476c9a62ea009ba2c884ee42e94e6e314a26f04d312434191836'; // cbBTC/USDC market
 const USER_ADDRESS = '0xc10f94115d1dc2D042B88b3Cc86D34380C55CEf5';
-const BLOCK_NUMBER = 27849529;
+const BLOCK_NUMBER = 27851201;
 
 // Function to query the position
 async function queryPosition() {
