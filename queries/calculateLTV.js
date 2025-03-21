@@ -91,13 +91,21 @@ async function calculateLTV() {
       console.log('------------------------------------------');
       console.log('LTV (percentage):', formatLTVAsPercentage(ltv));
       
+      return ltv;
     } else {
       console.log('\nNo market data found with the provided ID');
+      return null;
     }
   } catch (error) {
     console.error('Error:', error.message);
+    return null;
   }
 }
 
-// Execute the function
-calculateLTV(); 
+// Execute the function only if this file is run directly
+if (import.meta.url === `file://${process.argv[1]}`) {
+  calculateLTV();
+}
+
+// Export functions and format utility
+export { calculateLTV, formatLTVAsPercentage }; 

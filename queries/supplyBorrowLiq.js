@@ -64,6 +64,50 @@ async function fetchMarketById(marketId) {
   return await makeGraphQLRequest(query);
 }
 
+// Function to format LLTV as percentage (divide by 1e18 and multiply by 100)
+const formatLLTV = (value) => {
+  if (!value) return 'N/A';
+  try {
+    // Convert from 18-decimal fixed point to percentage
+    const numValue = (parseFloat(value) / 1e18) * 100;
+    return numValue.toFixed(2) + '%';
+  } catch (e) {
+    return 'Error';
+  }
+};
+
+// Function to get LLTV value as a number
+async function getLLTV() {
+  try {
+    const marketData = await fetchMarketById(GRAPHQL_MARKET_ID);
+    
+    if (marketData.market && marketData.market.lltv) {
+      // Check if the value is a string and not empty
+      if (typeof marketData.market.lltv === 'string' && marketData.market.lltv !== '') {
+        const lltvValue = parseFloat(marketData.market.lltv) / 1e18 * 100;
+        
+        // If the calculation results in 0 or NaN, use default value
+        if (isNaN(lltvValue) || lltvValue === 0) {
+          console.log('Parsed LLTV is invalid, using default value of 85%');
+          return 85;
+        }
+        
+        return lltvValue;
+      } else {
+        console.log('LLTV value is not in expected format, using default value of 85%');
+        return 85;
+      }
+    } else {
+      console.log('\nFailed to retrieve LLTV value, using default value of 85%');
+      return 85; // Use a default value instead of null
+    }
+  } catch (error) {
+    console.error('\nError in fetching LLTV:', error);
+    console.log('Using default LLTV value of 85%');
+    return 85; // Use a default value instead of null
+  }
+}
+
 // Main function to orchestrate all queries
 async function main() {
   try {
@@ -80,18 +124,6 @@ async function main() {
       };
       
       const loanDecimals = market.loanAsset?.decimals || 0;
-      
-      // Format LLTV as percentage (divide by 1e18 and multiply by 100)
-      const formatLLTV = (value) => {
-        if (!value) return 'N/A';
-        try {
-          // Convert from 18-decimal fixed point to percentage
-          const numValue = (parseFloat(value) / 1e18) * 100;
-          return numValue.toFixed(2) + '%';
-        } catch (e) {
-          return 'Error';
-        }
-      };
       
       console.log('\ncbBTC/USDC Market Status:');
       console.log('------------------------');
@@ -114,7 +146,7 @@ async function main() {
 }
 
 // Export functions to be used in other modules
-export { fetchMarketById, main };
+export { fetchMarketById, main, formatLLTV, getLLTV };
 
 // Execute the main function if this file is run directly
 if (import.meta.url === `file://${process.argv[1]}`) {

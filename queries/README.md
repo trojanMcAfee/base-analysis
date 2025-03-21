@@ -49,6 +49,27 @@ This script calculates the Loan-to-Value (LTV) ratio for a specific user's posit
 node calculateLTV.js
 ```
 
+## positionStatus.js
+
+This script evaluates the risk status of a user's position based on its Loan-to-Value (LTV) ratio.
+
+### Key Features
+- Calls calculateLTV.js to get the current LTV of the position
+- Fetches the maximum LTV (liquidation threshold) from the market data
+- Categorizes the position status into risk levels based on LTV thresholds
+- Displays a comprehensive risk assessment with color-coded status
+
+### LTV Risk Scale
+- 0% - 60%: Healthy (green) - Safe position with good collateralization
+- 60% - 70%: Caution (yellow) - Position requires monitoring
+- 70% - LLTV%: Warning (red) - Position at higher risk, close to liquidation threshold
+
+### Usage
+
+```bash
+node positionStatus.js
+```
+
 ## liqPrice.js
 
 This script calculates the liquidation price for a specific user's position in the cbBTC/USDC market.
