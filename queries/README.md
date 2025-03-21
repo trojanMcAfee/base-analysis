@@ -49,6 +49,23 @@ This script calculates the Loan-to-Value (LTV) ratio for a specific user's posit
 node calculateLTV.js
 ```
 
+## liqPrice.js
+
+This script calculates the liquidation price for a specific user's position in the cbBTC/USDC market.
+
+### Key Features
+- Connects to the Morpho contract on Base using Web3.js
+- Fetches a user's position (borrow shares and collateral amount)
+- Retrieves the LLTV (Liquidation Loan-to-Value) from the market data
+- Calculates liquidation price as `borrowedAmount / (collateralAmount * lltv)`
+- Displays the price at which the user's position would be eligible for liquidation
+
+### Usage
+
+```bash
+node liqPrice.js
+```
+
 ## btcPrice.js
 
 This script fetches the current Bitcoin price from the Chainlink oracle on Base.
