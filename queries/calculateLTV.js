@@ -15,7 +15,7 @@ import {
   BLOCK_NUMBER,
   GRAPHQL_MARKET_ID,
   calculateBorrowedAmount
-} from './state/variables.js';
+} from './state/common.js';
 
 // Configure environment variables
 const __filename = fileURLToPath(import.meta.url);

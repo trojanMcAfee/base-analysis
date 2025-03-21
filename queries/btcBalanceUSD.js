@@ -1,10 +1,12 @@
 import { fetchBTCPrice } from './btcPrice.js';
-import Web3 from 'web3';
+import { Web3 } from 'web3';
 import dotenv from 'dotenv';
+import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import fs from 'fs';
-import { DEFAULT_BTC_BALANCE } from './state/variables.js';
+import { chainlinkOracleABI } from './state/abis.js';
+import { DEFAULT_BTC_BALANCE } from './state/common.js';
 
 // Get the current module's directory and construct the path to the .env file
 const __filename = fileURLToPath(import.meta.url);

@@ -1,10 +1,11 @@
-import Web3 from 'web3';
+import { Web3 } from 'web3';
 import dotenv from 'dotenv';
+import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import fs from 'fs';
 import { redstoneOracleABI } from './state/abis.js';
-import { REDSTONE_BTC_USD_FEED } from './state/variables.js';
+import { REDSTONE_BTC_USD_FEED } from './state/common.js';
 
 // Get the current module's directory and construct the path to the .env file
 const __filename = fileURLToPath(import.meta.url);

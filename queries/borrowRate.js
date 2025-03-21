@@ -1,5 +1,5 @@
 import fetch from 'node-fetch';
-import { MORPHO_GRAPHQL_ENDPOINT, GRAPHQL_MARKET_ID } from './state/variables.js';
+import { MORPHO_GRAPHQL_ENDPOINT, GRAPHQL_MARKET_ID } from './state/common.js';
 
 // Function to make a direct GraphQL request
 async function makeGraphQLRequest(query, variables = {}) {
