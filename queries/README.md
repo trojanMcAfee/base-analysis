@@ -9,6 +9,7 @@ This script fetches market data for the cbBTC/USDC market on Base from Morpho's 
 ### Key Features
 - Queries the most active cbBTC/USDC market on Base
 - Displays total supply, total borrow, available liquidity, and utilization rate
+- Shows the Liquidation LTV (LLTV) for the market, which is the maximum LTV ratio before liquidation occurs
 
 ### Usage
 

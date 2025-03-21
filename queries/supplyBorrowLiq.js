@@ -49,6 +49,7 @@ async function fetchMarketById(marketId) {
           address
           decimals
         }
+        lltv
         state {
           supplyAssets
           borrowAssets
@@ -85,6 +86,18 @@ async function main() {
       
       const loanDecimals = market.loanAsset?.decimals || 0;
       
+      // Format LLTV as percentage (divide by 1e18 and multiply by 100)
+      const formatLLTV = (value) => {
+        if (!value) return 'N/A';
+        try {
+          // Convert from 18-decimal fixed point to percentage
+          const numValue = (parseFloat(value) / 1e18) * 100;
+          return numValue.toFixed(2) + '%';
+        } catch (e) {
+          return 'Error';
+        }
+      };
+      
       console.log('\ncbBTC/USDC Market Status:');
       console.log('------------------------');
       console.log(`Market ID: ${market.id}`);
@@ -92,6 +105,7 @@ async function main() {
       console.log(`Total Borrow: ${formatValue(market.state.borrowAssets, loanDecimals)} USDC`);
       console.log(`Available Liquidity: ${formatValue(market.state.liquidityAssets, loanDecimals)} USDC`);
       console.log(`Utilization Rate: ${market.state.utilization ? (parseFloat(market.state.utilization) * 100).toFixed(2) + '%' : 'N/A'}`);
+      console.log(`Liquidation LTV: ${formatLLTV(market.lltv)}`);
       console.log(`Last Updated: ${market.state.timestamp ? new Date(parseInt(market.state.timestamp) * 1000).toISOString() : 'N/A'}`);
       console.log(`Total Borrow Shares: ${market.state.borrowShares}`);
     } else {
