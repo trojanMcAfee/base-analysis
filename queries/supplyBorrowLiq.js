@@ -52,6 +52,7 @@ async function fetchMarketById(marketId) {
         state {
           supplyAssets
           borrowAssets
+          borrowShares
           liquidityAssets
           collateralAssets
           utilization
@@ -92,6 +93,7 @@ async function main() {
       console.log(`Available Liquidity: ${formatValue(market.state.liquidityAssets, loanDecimals)} USDC`);
       console.log(`Utilization Rate: ${market.state.utilization ? (parseFloat(market.state.utilization) * 100).toFixed(2) + '%' : 'N/A'}`);
       console.log(`Last Updated: ${market.state.timestamp ? new Date(parseInt(market.state.timestamp) * 1000).toISOString() : 'N/A'}`);
+      console.log(`Total Borrow Shares: ${market.state.borrowShares}`);
     } else {
       console.log('\nNo market found with the provided ID');
     }
@@ -102,5 +104,10 @@ async function main() {
   }
 }
 
-// Execute the main function
-main();
+// Export functions to be used in other modules
+export { fetchMarketById, main };
+
+// Execute the main function if this file is run directly
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main();
+}
