@@ -16,21 +16,6 @@ This script fetches market data for the cbBTC/USDC market on Base from Morpho's 
 node supplyBorrowLiq.js
 ```
 
-## utilizationTarget.js
-
-This script queries the Morpho Blue smart contract directly to get the utilization target for the cbBTC/USDC market.
-
-### Key Features
-- Connects to the Morpho contract on Base using Web3.js
-- Retrieves market configuration including interest rate model parameters
-- Displays the utilization target, which is not available through the GraphQL API
-
-### Usage
-
-```bash
-node utilizationTarget.js
-```
-
 ## borrowRate.js
 
 This script fetches the current borrowing rate for the cbBTC/USDC market from Morpho's GraphQL API.
@@ -46,24 +31,67 @@ This script fetches the current borrowing rate for the cbBTC/USDC market from Mo
 node borrowRate.js
 ```
 
+## calculateLTV.js
+
+This script calculates the Loan-to-Value (LTV) ratio for a specific user's position in the cbBTC/USDC market.
+
+### Key Features
+- Connects to the Morpho contract on Base using Web3.js
+- Fetches a user's position (borrow shares and collateral amount)
+- Queries Chainlink oracle for BTC price
+- Calculates LTV as `(borrowedAmount / (collateralAmount * oraclePrice)) * 100`
+- Displays the LTV ratio as a percentage
+
+### Usage
+
+```bash
+node calculateLTV.js
+```
+
+## btcPrice.js
+
+This script fetches the current Bitcoin price from the Chainlink oracle on Base.
+
+### Key Features
+- Connects to the Chainlink BTC/USD price feed on Base
+- Displays the current BTC price in USD
+- Shows when the price was last updated
+
+### Usage
+
+```bash
+node btcPrice.js
+```
+
+## btcBalanceUSD.js
+
+This script calculates the USD value of a user's BTC holdings by combining on-chain data with oracle price feeds.
+
+### Key Features
+- Queries user's BTC balance from the blockchain
+- Fetches current BTC/USD price from Chainlink oracle
+- Calculates and displays the value of the holdings in USD
+
+### Usage
+
+```bash
+node btcBalanceUSD.js
+```
+
 ### Configuration
 
-The script is configured to fetch data for a specific cbBTC/USDC market on Base chain. If you want to query a different market, update the `marketId` variable in the script.
+The scripts are configured to fetch data for specific cbBTC/USDC markets on Base chain. If you want to query different markets or users, update the relevant variables in each script:
+- `MARKET_ID` or `marketId` for changing the target market
+- `USER_ADDRESS` for changing the user position being analyzed
+- `BLOCK_NUMBER` to query data at a specific blockchain height
 
-### Expected Output
-
-The script will display:
-- Market ID
-- Market configuration (loan token, collateral token, oracle, etc.)
-- LLTV (Loan-to-Value ratio)
-- Utilization Target
-
-## API Endpoints
+### API Endpoints
 
 - GraphQL API: `https://blue-api.morpho.org/graphql`
-- Base Blockchain RPC: `https://mainnet.base.org`
+- Base Blockchain RPC: Configured via BASE_RPC_URL in .env file
 
 ## Dependencies
 
+- web3: For interacting with the Morpho smart contracts and blockchain data
 - node-fetch: For making HTTP requests to the GraphQL API
-- web3: For interacting with the Morpho smart contract 
+- dotenv: For loading environment variables 
