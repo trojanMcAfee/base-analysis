@@ -3,6 +3,18 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { fetchMarketById } from './supplyBorrowLiq.js';
+import { morphoABI } from './state/abis.js';
+import { 
+  BORROWED_AMOUNT_DECIMALS, 
+  COLLATERAL_AMOUNT_DECIMALS,
+  MORPHO_CONTRACT_ADDRESS,
+  CBBTC_USDC_MARKET_ID,
+  USER_ADDRESS,
+  BLOCK_NUMBER,
+  GRAPHQL_MARKET_ID,
+  calculateBorrowedAmount,
+  parseLLTVToDecimal
+} from './state/variables.js';
 
 // Configure environment variables
 const __filename = fileURLToPath(import.meta.url);
@@ -18,94 +30,6 @@ if (!process.env.BASE_RPC_URL) {
 // Initialize Web3 with Base RPC URL
 const web3 = new Web3(process.env.BASE_RPC_URL);
 
-// Constants for calculations
-const VIRTUAL_SHARES = BigInt(1e6);
-const VIRTUAL_ASSETS = BigInt(1);
-
-// Asset decimal adjustment factors
-const BORROWED_AMOUNT_DECIMALS = BigInt(10) ** BigInt(6); // 1e6
-const COLLATERAL_AMOUNT_DECIMALS = BigInt(10) ** BigInt(8); // 1e8
-
-// Morpho contract ABI (minimal version for the position function)
-const morphoABI = [
-  {
-    "inputs": [
-      {
-        "internalType": "Id",
-        "name": "id",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "address",
-        "name": "user",
-        "type": "address"
-      }
-    ],
-    "name": "position",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "supplyShares",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint128",
-        "name": "borrowShares",
-        "type": "uint128"
-      },
-      {
-        "internalType": "uint128",
-        "name": "collateral",
-        "type": "uint128"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  }
-];
-
-// Contract addresses
-const MORPHO_CONTRACT_ADDRESS = '0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb';
-
-// Function parameters
-const MARKET_ID = '0x9103c3b4e834476c9a62ea009ba2c884ee42e94e6e314a26f04d312434191836'; // cbBTC/USDC market
-const USER_ADDRESS = '0xc10f94115d1dc2D042B88b3Cc86D34380C55CEf5';
-const BLOCK_NUMBER = 27884440;
-// Morpho GraphQL market ID
-const GRAPHQL_MARKET_ID = 'f6bdf547-ff28-429b-b81d-d98574a6fbcd';
-
-// Utility functions for big number math
-function mulDivUp(x, y, d) {
-  // (x * y + (d - 1)) / d
-  const numerator = (x * y) + (d - BigInt(1));
-  return numerator / d;
-}
-
-function toAssetsUp(shares, totalAssets, totalShares) {
-  return mulDivUp(
-    shares,
-    totalAssets + VIRTUAL_ASSETS,
-    totalShares + VIRTUAL_SHARES
-  );
-}
-
-// Function to calculate borrowed amount
-function calculateBorrowedAmount(borrowShares, totalBorrowAssets, totalBorrowShares) {
-  // Convert all values to BigInt for accurate calculation
-  const shares = BigInt(borrowShares.toString());
-  const assets = BigInt(totalBorrowAssets.toString());
-  const totalShares = BigInt(totalBorrowShares.toString());
-  
-  // Calculate borrowed amount using toAssetsUp function
-  return toAssetsUp(shares, assets, totalShares);
-}
-
-// Function to parse LLTV from string to decimal
-function parseLLTVToDecimal(lltvValue) {
-  // The LLTV is stored as a fixed-point number with 18 decimals
-  return parseFloat(lltvValue) / 1e18;
-}
-
 // Function to calculate liquidation price
 async function calculateLiquidationPrice() {
   try {
@@ -113,11 +37,11 @@ async function calculateLiquidationPrice() {
     const morphoContract = new web3.eth.Contract(morphoABI, MORPHO_CONTRACT_ADDRESS);
     
     // Call the position function at the specified block
-    const position = await morphoContract.methods.position(MARKET_ID, USER_ADDRESS).call({}, BLOCK_NUMBER);
+    const position = await morphoContract.methods.position(CBBTC_USDC_MARKET_ID, USER_ADDRESS).call({}, BLOCK_NUMBER);
     
     console.log('Position data for user at block', BLOCK_NUMBER, ':');
     console.log('------------------------------------------');
-    console.log('Market ID:', MARKET_ID);
+    console.log('Market ID:', CBBTC_USDC_MARKET_ID);
     console.log('User Address:', USER_ADDRESS);
     
     // Fetch market data from GraphQL

@@ -3,6 +3,8 @@ import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import fs from 'fs';
+import { redstoneOracleABI } from './state/abis.js';
+import { REDSTONE_BTC_USD_FEED } from './state/variables.js';
 
 // Get the current module's directory and construct the path to the .env file
 const __filename = fileURLToPath(import.meta.url);
@@ -17,59 +19,6 @@ if (fs.existsSync(envPath)) {
   process.exit(1);
 }
 
-// RedStone Oracle Interface ABI (minimal for price feed)
-const oracleABI = [
-  {
-    "inputs": [],
-    "name": "latestRoundData",
-    "outputs": [
-      {
-        "internalType": "uint80",
-        "name": "roundId",
-        "type": "uint80"
-      },
-      {
-        "internalType": "int256",
-        "name": "answer",
-        "type": "int256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "startedAt",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "updatedAt",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint80",
-        "name": "answeredInRound",
-        "type": "uint80"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "decimals",
-    "outputs": [
-      {
-        "internalType": "uint8",
-        "name": "",
-        "type": "uint8"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  }
-];
-
-// RedStone BTC/USD Price Feed address on Ink
-const REDSTONE_BTC_USD_FEED = '0x13433B1949d9141Be52Ae13Ad7e7E4911228414e';
-
 // Main function to fetch the BTC/USD price
 export async function fetchBTCPrice() {
   try {
@@ -77,7 +26,7 @@ export async function fetchBTCPrice() {
     const web3 = new Web3(process.env.INK_RPC_URL);
     
     // Create a contract instance
-    const oracle = new web3.eth.Contract(oracleABI, REDSTONE_BTC_USD_FEED);
+    const oracle = new web3.eth.Contract(redstoneOracleABI, REDSTONE_BTC_USD_FEED);
     
     // Get the number of decimals
     const decimals = await oracle.methods.decimals().call();

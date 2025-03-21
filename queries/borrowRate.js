@@ -1,12 +1,10 @@
 import fetch from 'node-fetch';
-
-// The GraphQL endpoint for Morpho's API
-const endpoint = 'https://blue-api.morpho.org/graphql';
+import { MORPHO_GRAPHQL_ENDPOINT, GRAPHQL_MARKET_ID } from './state/variables.js';
 
 // Function to make a direct GraphQL request
 async function makeGraphQLRequest(query, variables = {}) {
   try {
-    const response = await fetch(endpoint, {
+    const response = await fetch(MORPHO_GRAPHQL_ENDPOINT, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -52,11 +50,8 @@ async function fetchBorrowingRate(marketId) {
 // Main function to orchestrate the query
 async function main() {
   try {
-    // Market ID of the cbBTC/USDC market we're interested in
-    const marketId = 'f6bdf547-ff28-429b-b81d-d98574a6fbcd';
-
     // Fetch the borrowing rate for the market
-    const marketData = await fetchBorrowingRate(marketId);
+    const marketData = await fetchBorrowingRate(GRAPHQL_MARKET_ID);
     
     if (marketData.market && marketData.market.state) {
       const state = marketData.market.state;

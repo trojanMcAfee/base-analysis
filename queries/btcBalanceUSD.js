@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import fs from 'fs';
+import { DEFAULT_BTC_BALANCE } from './state/variables.js';
 
 // Get the current module's directory and construct the path to the .env file
 const __filename = fileURLToPath(import.meta.url);
@@ -17,9 +18,6 @@ if (fs.existsSync(envPath)) {
   console.error('.env file not found');
   process.exit(1);
 }
-
-// Default BTC balance if no address is provided
-const DEFAULT_BTC_BALANCE = 0.2;
 
 /**
  * Query the BTC balance of a given address
