@@ -21,6 +21,7 @@ const web3 = new Web3(process.env.BASE_RPC_URL);
 // Constants for calculations
 const VIRTUAL_SHARES = BigInt(1e6);
 const VIRTUAL_ASSETS = BigInt(1);
+const ORACLE_PRICE_SCALE = BigInt(10) ** BigInt(36); // 1e36
 
 // Morpho contract ABI (minimal version for the position function)
 const morphoABI = [
@@ -60,8 +61,46 @@ const morphoABI = [
   }
 ];
 
-// Morpho contract address
+// Chainlink Oracle ABI for latestRoundData
+const oracleABI = [
+  {
+    "inputs": [],
+    "name": "latestRoundData",
+    "outputs": [
+      {
+        "internalType": "uint80",
+        "name": "roundId",
+        "type": "uint80"
+      },
+      {
+        "internalType": "int256",
+        "name": "answer",
+        "type": "int256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "startedAt",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "updatedAt",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint80",
+        "name": "answeredInRound",
+        "type": "uint80"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+];
+
+// Contract addresses
 const MORPHO_CONTRACT_ADDRESS = '0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb';
+const ORACLE_ADDRESS = '0x64c911996D3c6aC71f9b455B1E8E7266BcbD848F';
 
 // Function parameters
 const MARKET_ID = '0x9103c3b4e834476c9a62ea009ba2c884ee42e94e6e314a26f04d312434191836'; // cbBTC/USDC market
@@ -96,14 +135,39 @@ function calculateBorrowedAmount(borrowShares, totalBorrowAssets, totalBorrowSha
   return toAssetsUp(shares, assets, totalShares);
 }
 
-// Function to query the position and calculate borrowed amount
-async function queryPositionAndCalculateBorrowedAmount() {
+// Function to calculate LTV
+function calculateLTV(borrowedAmount, collateralAmount, oraclePrice, oraclePriceScale) {
+  // LTV = (BORROWED_AMOUNT * ORACLE_PRICE) / (COLLATERAL_AMOUNT * ORACLE_PRICE_SCALE)
+  const numerator = borrowedAmount * oraclePrice;
+  const denominator = collateralAmount * oraclePriceScale;
+  
+  if (denominator === BigInt(0)) {
+    return BigInt(0); // Avoid division by zero
+  }
+  
+  return numerator / denominator;
+}
+
+// Function to format LTV as a percentage
+function formatLTVAsPercentage(ltv) {
+  // Convert the raw LTV ratio to a percentage with 2 decimal places
+  const ltvFloat = Number(ltv) * 100;
+  return ltvFloat.toFixed(2) + '%';
+}
+
+// Function to query the position and calculate LTV
+async function calculateAndDisplayLTV() {
   try {
-    // Create contract instance
+    // Create contract instances
     const morphoContract = new web3.eth.Contract(morphoABI, MORPHO_CONTRACT_ADDRESS);
+    const oracleContract = new web3.eth.Contract(oracleABI, ORACLE_ADDRESS);
     
     // Call the position function at the specified block
     const position = await morphoContract.methods.position(MARKET_ID, USER_ADDRESS).call({}, BLOCK_NUMBER);
+    
+    // Call the oracle to get the latest price data
+    const oracleData = await oracleContract.methods.latestRoundData().call({}, BLOCK_NUMBER);
+    const oraclePrice = BigInt(oracleData.answer.toString());
     
     console.log('Position data for user at block', BLOCK_NUMBER, ':');
     console.log('------------------------------------------');
@@ -132,9 +196,23 @@ async function queryPositionAndCalculateBorrowedAmount() {
         market.state.borrowShares
       );
       
-      console.log('\nCalculation Results:');
+      // Calculate LTV using all components
+      const collateralAmount = BigInt(position.collateral.toString());
+      const ltv = calculateLTV(borrowedAmount, collateralAmount, oraclePrice, ORACLE_PRICE_SCALE);
+      
+      console.log('\nLTV Calculation:');
       console.log('------------------------------------------');
       console.log('BORROWED_AMOUNT:', borrowedAmount.toString());
+      console.log('ORACLE_PRICE:', oraclePrice.toString());
+      console.log('COLLATERAL_AMOUNT:', collateralAmount.toString());
+      console.log('ORACLE_PRICE_SCALE:', ORACLE_PRICE_SCALE.toString());
+      console.log('------------------------------------------');
+      console.log('LTV Formula:');
+      console.log('LTV = (BORROWED_AMOUNT * ORACLE_PRICE) / (COLLATERAL_AMOUNT * ORACLE_PRICE_SCALE)');
+      console.log('------------------------------------------');
+      console.log('LTV (raw):', ltv.toString());
+      console.log('LTV (percentage):', formatLTVAsPercentage(ltv));
+      
     } else {
       console.log('\nNo market data found with the provided ID');
     }
@@ -144,4 +222,4 @@ async function queryPositionAndCalculateBorrowedAmount() {
 }
 
 // Execute the function
-queryPositionAndCalculateBorrowedAmount(); 
+calculateAndDisplayLTV(); 
