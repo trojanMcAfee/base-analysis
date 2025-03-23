@@ -3,13 +3,9 @@ import json
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import seaborn as sns
 from matplotlib.colors import LinearSegmentedColormap
 import os
-from scipy.stats import gaussian_kde
-
-# Constants
-LLTV_DECIMAL = 0.86  # Based on the 86% LLTV found in the provided output
+import subprocess
 
 def load_position_data(file_path):
     """Load position data from the JSON file"""
@@ -21,34 +17,60 @@ def load_position_data(file_path):
         print(f"Error loading data: {e}")
         return None
 
-def calculate_liquidation_price(collateral, borrowed, lltv_decimal=LLTV_DECIMAL):
-    """
-    Calculate the liquidation price using the formula:
-    Liquidation price = borrowed_assets / (collateral_units * lltv_decimal)
-    """
-    if collateral == 0:
+def get_current_btc_price():
+    """Get current BTC price by calling btcPrice.js"""
+    try:
+        # Get the directory of the current script
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        
+        # Run btcPrice.js and capture output
+        result = subprocess.run(
+            ['node', os.path.join(script_dir, 'btcPrice.js')], 
+            capture_output=True, 
+            text=True,
+            check=True
+        )
+        
+        # Parse the output to extract the price
+        output_lines = result.stdout.strip().split('\n')
+        for line in output_lines:
+            if 'BTC/USD Price:' in line:
+                # Extract the price value (remove $ and commas)
+                price_str = line.split('$')[1].strip().replace(',', '')
+                return float(price_str)
+        
+        # If price not found in the output
+        print("Warning: Could not extract BTC price from btcPrice.js output")
+        print("Output was:", result.stdout)
         return None
-    return borrowed / (collateral * lltv_decimal)
+    
+    except subprocess.CalledProcessError as e:
+        print(f"Error running btcPrice.js: {e}")
+        print(f"Error output: {e.stderr}")
+        return None
+    except Exception as e:
+        print(f"Error getting BTC price: {e}")
+        return None
 
 def create_liquidation_price_dataframe(data):
-    """Create a DataFrame with position data and calculated liquidation prices"""
+    """Create a DataFrame with position data"""
     positions = []
     
     for pos in data['positions']:
         try:
+            # The liquidation price is now included in the JSON data
             collateral_btc = pos['collateral']['cbBTC']
             borrowed_usd = pos['borrowed']['USD']
+            liquidation_price = pos.get('liquidationPrice', None)
             
-            if collateral_btc > 0:
-                liq_price = calculate_liquidation_price(collateral_btc, borrowed_usd)
-                
+            if collateral_btc > 0 and liquidation_price is not None:
                 positions.append({
                     'position_id': pos['position'],
                     'user_address': pos['userAddress'],
                     'collateral_btc': collateral_btc,
                     'collateral_usd': pos['collateral']['USD'],
                     'borrowed_usd': borrowed_usd,
-                    'liquidation_price': liq_price,
+                    'liquidation_price': liquidation_price,
                     'current_ltv': (borrowed_usd / pos['collateral']['USD']) * 100 if pos['collateral']['USD'] > 0 else 0
                 })
         except Exception as e:
@@ -62,8 +84,8 @@ def filter_outliers(df, column, lower_quantile=0.01, upper_quantile=0.99):
     upper_bound = df[column].quantile(upper_quantile)
     return df[(df[column] >= lower_bound) & (df[column] <= upper_bound)]
 
-def create_btc_liquidation_heatmap(df):
-    """Create a weighted heatmap of BTC liquidation prices"""
+def create_btc_liquidation_heatmap(df, current_btc_price=None):
+    """Create a histogram of BTC liquidation prices"""
     # Filter outliers
     df_filtered = filter_outliers(df, 'liquidation_price')
     
@@ -80,9 +102,9 @@ def create_btc_liquidation_heatmap(df):
     prices = df_filtered['liquidation_price'].values
     weights = df_filtered['collateral_btc'].values
     
-    # Define price range for histogram
-    min_price = max(df_filtered['liquidation_price'].min(), 40000)
-    max_price = min(df_filtered['liquidation_price'].max(), 110000)
+    # Define price range for histogram (extend to 100k to show current BTC price)
+    min_price = max(df_filtered['liquidation_price'].min(), 35000)
+    max_price = 100000  # Extended to 100k to show current BTC price
     
     # Create histogram bins
     bins = np.linspace(min_price, max_price, 30)
@@ -93,14 +115,6 @@ def create_btc_liquidation_heatmap(df):
     # Calculate bin centers for plotting
     bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
     
-    # Calculate KDE for smooth curve
-    kde_weights = gaussian_kde(prices, weights=weights)
-    x_range = np.linspace(min_price, max_price, 1000)
-    kde_values = kde_weights(x_range)
-    
-    # Scale KDE to match histogram height
-    kde_values = kde_values * (hist.max() / kde_values.max())
-    
     # Create custom colormap (similar to image)
     colors = plt.cm.Blues(np.linspace(0.4, 1, 256))
     cmap = LinearSegmentedColormap.from_list('blue_gradient', colors)
@@ -108,20 +122,28 @@ def create_btc_liquidation_heatmap(df):
     # Plot histogram
     plt.bar(bin_centers, hist, width=(bins[1]-bins[0]), alpha=0.7, color=colors[200])
     
-    # Plot KDE curve
-    plt.plot(x_range, kde_values, color='white', linewidth=2)
-    
-    # Add vertical lines at key price points (from the attached image)
+    # Add vertical lines at key price points
     plt.axvline(x=50000, color='white', linestyle='--', alpha=0.8, linewidth=1.5)
     plt.axvline(x=100000, color='white', linestyle='--', alpha=0.8, linewidth=1.5)
     
     # Add some dotted vertical lines at intermediate points
-    for price in np.linspace(60000, 90000, 4):
-        plt.axvline(x=price, color='white', linestyle=':', alpha=0.5, linewidth=0.8)
+    for price in np.linspace(40000, 90000, 6):
+        plt.axvline(x=price, color='white', linestyle=':', alpha=0.4, linewidth=0.8)
+    
+    # Add current BTC price line if available
+    if current_btc_price is not None:
+        plt.axvline(x=current_btc_price, color='red', linestyle='-', alpha=1.0, linewidth=2.5)
+        # Position the text based on where the price is
+        if current_btc_price < max_price - 15000:
+            plt.text(current_btc_price + 1000, hist.max() * 0.9, f"Current BTC Price: ${current_btc_price:,.0f}", 
+                    color='red', fontsize=10, fontweight='bold')
+        else:
+            plt.text(current_btc_price - 15000, hist.max() * 0.9, f"Current BTC Price: ${current_btc_price:,.0f}", 
+                    color='red', fontsize=10, fontweight='bold')
     
     # Add legend for vertical lines
     plt.text(51000, hist.max() * 0.97, "$50,000", color='white', fontsize=10)
-    plt.text(101000, hist.max() * 0.97, "$100,000", color='white', fontsize=10)
+    plt.text(90000, hist.max() * 0.97, "$100,000", color='white', fontsize=10)
     
     # Title and labels
     plt.title("Bitcoin Price Distribution", fontsize=24, pad=20)
@@ -135,11 +157,17 @@ def create_btc_liquidation_heatmap(df):
     print(f"Total positions analyzed: {len(df_filtered)}")
     print(f"Most concentrated liquidation price range: ${bin_centers[np.argmax(hist)]:,.0f}")
     
-    # Add legend on the right side
+    # Add legend for lines
     legend_elements = [
         plt.Line2D([0], [0], color='white', linestyle='--', label='$50,000'),
-        plt.Line2D([0], [0], color='white', linestyle='--', label='$100,000')
+        plt.Line2D([0], [0], color='white', linestyle='--', label='$100,000'),
     ]
+    
+    if current_btc_price is not None:
+        legend_elements.append(
+            plt.Line2D([0], [0], color='red', linestyle='-', label=f'Current BTC Price (${current_btc_price:,.0f})')
+        )
+    
     plt.legend(handles=legend_elements, loc='upper right', bbox_to_anchor=(0.99, 0.99), frameon=True)
     
     # Tight layout and save
@@ -169,8 +197,10 @@ def additional_analysis(df):
     print(f"Standard deviation: ${df['liquidation_price'].std():,.2f}")
     
     # Calculate concentration by price range
-    price_ranges = [(40000, 50000), (50000, 60000), (60000, 70000), 
-                    (70000, 80000), (80000, 90000), (90000, 100000)]
+    price_ranges = [(35000, 40000), (40000, 45000), (45000, 50000), 
+                    (50000, 55000), (55000, 60000), (60000, 65000),
+                    (65000, 70000), (70000, 75000), (75000, 85000),
+                    (85000, 100000)]
     
     print("\nPositions by Liquidation Price Range:")
     for lower, upper in price_ranges:
@@ -188,6 +218,11 @@ def main():
     if not data:
         return
     
+    # Get current BTC price
+    current_btc_price = get_current_btc_price()
+    if current_btc_price:
+        print(f"Current BTC Price: ${current_btc_price:,.2f}")
+    
     # Process data
     df = create_liquidation_price_dataframe(data)
     
@@ -196,7 +231,7 @@ def main():
     print(f"Positions with valid liquidation prices: {df['liquidation_price'].notna().sum()}")
     
     # Create heatmap
-    create_btc_liquidation_heatmap(df)
+    create_btc_liquidation_heatmap(df, current_btc_price)
     
     # Perform additional analysis
     additional_analysis(df)
