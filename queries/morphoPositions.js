@@ -151,24 +151,28 @@ async function main() {
         const borrowDecimalFactor = 10 ** position.market.loanAsset.decimals;
         const collateralDecimalFactor = 10 ** position.market.collateralAsset.decimals;
         
-        const collateralAmount = parseFloat(state.collateral) / collateralDecimalFactor;
-        const borrowAmount = parseFloat(state.borrowAssets) / borrowDecimalFactor;
-        const borrowUsd = parseFloat(state.borrowAssetsUsd);
-        const collateralUsd = parseFloat(state.collateralUsd);
+        // Add validation to handle null or undefined values
+        const collateralAmount = state.collateral ? parseFloat(state.collateral) / collateralDecimalFactor : 0;
+        const borrowAmount = state.borrowAssets ? parseFloat(state.borrowAssets) / borrowDecimalFactor : 0;
         
-        // Add to totals
-        totalBorrowedUsd += borrowUsd;
-        totalCollateralUsd += collateralUsd;
+        // For USDC, the asset value is equal to the USD value (1:1)
+        // Use borrowAssets directly as USD value since borrowAssetsUsd is null
+        const borrowUsd = state.borrowAssets ? parseFloat(state.borrowAssets) / borrowDecimalFactor : 0;
+        const collateralUsd = state.collateralUsd ? parseFloat(state.collateralUsd) : 0;
+        
+        // Only add valid amounts to totals
+        if (!isNaN(borrowUsd)) totalBorrowedUsd += borrowUsd;
+        if (!isNaN(collateralUsd)) totalCollateralUsd += collateralUsd;
         
         console.log(`\nPosition ${index + 1}:`);
         console.log(`  User: ${userAddress}`);
         console.log(`  Market: ${marketName}`);
-        console.log(`  Collateral: ${collateralAmount.toFixed(8)} ${position.market.collateralAsset.symbol} ($${collateralUsd.toFixed(2)})`);
+        console.log(`  Collateral: ${collateralAmount.toFixed(8)} ${position.market.collateralAsset.symbol} (${!isNaN(collateralUsd) ? '$' + collateralUsd.toFixed(2) : 'Value unavailable'})`);
         console.log(`  Borrowed: ${borrowAmount.toFixed(6)} ${position.market.loanAsset.symbol} ($${borrowUsd.toFixed(2)})`);
         console.log(`  Health Factor: ${position.healthFactor !== null ? position.healthFactor.toFixed(4) : 'N/A'}`);
         
-        // Calculate LTV
-        if (collateralUsd && borrowUsd) {
+        // Calculate LTV only when both values are valid
+        if (collateralUsd > 0 && borrowUsd > 0 && !isNaN(collateralUsd) && !isNaN(borrowUsd)) {
           const ltv = (borrowUsd / collateralUsd) * 100;
           console.log(`  Loan-to-Value: ${ltv.toFixed(2)}%`);
         }
@@ -179,7 +183,10 @@ async function main() {
       console.log(`Total Positions: ${positions.length}`);
       console.log(`Total Borrowed: $${totalBorrowedUsd.toFixed(2)}`);
       console.log(`Total Collateral: $${totalCollateralUsd.toFixed(2)}`);
-      console.log(`Average LTV: ${(totalBorrowedUsd / totalCollateralUsd * 100).toFixed(2)}%`);
+      
+      // Prevent division by zero or NaN values in average LTV calculation
+      const avgLtv = totalCollateralUsd > 0 ? (totalBorrowedUsd / totalCollateralUsd * 100) : 0;
+      console.log(`Average LTV: ${!isNaN(avgLtv) ? avgLtv.toFixed(2) : 0}%`);
       
     } else {
       console.log('No positions with open borrows found for the cbBTC/USDC market on Base.');
