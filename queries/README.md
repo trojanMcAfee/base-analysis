@@ -87,6 +87,70 @@ This script calculates the liquidation price for a specific user's position in t
 node liqPrice.js
 ```
 
+## morphoPositions.js
+
+This script fetches data on all positions in the cbBTC/USDC market and saves it to a JSON file.
+
+### Key Features
+- Queries all open positions from the cbBTC/USDC market using Morpho's GraphQL API
+- Processes borrower data including collateral, borrowed amounts, and liquidation prices
+- Calculates liquidation price for each position using the formula `borrowedAmount / (collateralAmount * lltv)`
+- Creates a comprehensive dataset with position details and summary statistics
+- Saves data to `data/morpho_positions_all.json` for further analysis
+
+### Usage
+
+```bash
+node morphoPositions.js
+```
+
+### Output File
+The script generates `morpho_positions_all.json` which contains:
+- Summary statistics (total positions, total borrowed, total collateral, average LTV)
+- Detailed data for each position including:
+  - User address
+  - Collateral amount (in BTC and USD)
+  - Borrowed amount (in USDC and USD)
+  - Calculated liquidation price
+
+## morphoPositionsCount.js
+
+This script counts the total number of active positions in the cbBTC/USDC market.
+
+### Key Features
+- Efficiently counts all open positions with active borrows
+- Uses pagination to handle large numbers of positions
+- Reports the total count of active borrowers in the market
+
+### Usage
+
+```bash
+node morphoPositionsCount.js
+```
+
+## py-scripts/btc_liquidation_heatmap.py
+
+This Python script visualizes the distribution of liquidation prices across all positions.
+
+### Key Features
+- Analyzes the `morpho_positions_all.json` dataset
+- Fetches current Bitcoin price from `btcPrice.js` for reference
+- Creates a weighted histogram of liquidation prices, with larger positions having more visual impact
+- Shows how liquidation prices are distributed relative to the current BTC price
+- Provides additional statistical analysis of liquidation price ranges
+
+### Usage
+
+```bash
+cd queries/py-scripts
+python3 btc_liquidation_heatmap.py
+```
+
+### Output
+- Generates a heatmap visualization saved to `plots/png/btc_liquidation_heatmap.png`
+- Displays summary statistics about liquidation price distribution
+- Shows the concentration of liquidation prices at different BTC price ranges
+
 ## btcPrice.js
 
 This script fetches the current Bitcoin price from the Chainlink oracle on Base.
@@ -133,4 +197,8 @@ The scripts are configured to fetch data for specific cbBTC/USDC markets on Base
 
 - web3: For interacting with the Morpho smart contracts and blockchain data
 - node-fetch: For making HTTP requests to the GraphQL API
-- dotenv: For loading environment variables 
+- dotenv: For loading environment variables
+- Python dependencies (for btc_liquidation_heatmap.py):
+  - pandas: For data manipulation
+  - matplotlib: For visualization
+  - numpy: For numerical operations
