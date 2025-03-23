@@ -20,8 +20,8 @@ def load_position_data(file_path):
 def get_current_btc_price():
     """Get current BTC price by calling btcPrice.js"""
     try:
-        # Get the directory of the current script
-        script_dir = os.path.dirname(os.path.abspath(__file__))
+        # Get the parent directory of the current script (queries directory)
+        script_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         
         # Run btcPrice.js and capture output
         result = subprocess.run(
@@ -170,20 +170,15 @@ def create_btc_liquidation_heatmap(df, current_btc_price=None):
     
     plt.legend(handles=legend_elements, loc='upper right', bbox_to_anchor=(0.99, 0.99), frameon=True)
     
-    # Tight layout and save
+    # Tight layout
     plt.tight_layout()
     
-    # Save to plots directory (create if it doesn't exist)
-    plot_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'plots')
+    # Save ONLY to plots/png directory (create if it doesn't exist)
+    plot_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'plots', 'png')
     os.makedirs(plot_dir, exist_ok=True)
     plot_path = os.path.join(plot_dir, 'btc_liquidation_heatmap.png')
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
     print(f"Plot saved to: {plot_path}")
-    
-    # Also save locally in the current directory for easy access
-    current_dir_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'btc_liquidation_heatmap.png')
-    plt.savefig(current_dir_path, dpi=300, bbox_inches='tight')
-    print(f"Plot also saved to: {current_dir_path}")
     
     # Show plot
     plt.show()
@@ -210,8 +205,9 @@ def additional_analysis(df):
         print(f"${lower:,} - ${upper:,}: {count} positions ({pct:.1f}%) - Total collateral: {total_collateral:.4f} BTC")
 
 def main():
-    # Path to the JSON data file
-    data_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'morpho_positions_all.json')
+    # Path to the JSON data file (adjusted for the new script location)
+    queries_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    data_path = os.path.join(queries_dir, 'data', 'morpho_positions_all.json')
     
     # Load data
     data = load_position_data(data_path)
