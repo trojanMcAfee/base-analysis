@@ -151,6 +151,9 @@ python3 btc_liquidation_heatmap.py
 - Displays summary statistics about liquidation price distribution
 - Shows the concentration of liquidation prices at different BTC price ranges
 
+### Generated Files
+The script creates `btc_liquidation_heatmap.png`, which is saved in the `plots/png` directory. This visualization shows the distribution of liquidation prices across all positions in the market, with the current BTC price indicated as a red vertical line for reference. It provides a clear visual representation of where liquidation risk is concentrated in the market.
+
 ## btcPrice.js
 
 This script fetches the current Bitcoin price from the Chainlink oracle on Base.
