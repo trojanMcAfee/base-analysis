@@ -85,6 +85,7 @@ async function main() {
     }
     
     console.log(`\nTotal positions with open borrows: ${allPositionsCount}`);
+    console.log(`Note: The main script only displays the first 100 positions in detail.`);
 
   } catch (error) {
     console.error('Error in fetching data:', error);
