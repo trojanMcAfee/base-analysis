@@ -17,6 +17,32 @@ This script fetches market data for the cbBTC/USDC market on Base from Morpho's 
 node supplyBorrowLiq.js
 ```
 
+## userTransactions.js
+
+This script fetches a user's transaction history and position data on Morpho's Base deployments.
+
+### Key Features
+- Retrieves user information using Morpho's GraphQL API with proper chain ID parameters
+- Shows detailed information about user's active positions including:
+  - Market details (collateral/loan assets)
+  - Supply and borrow shares
+  - Collateral amounts
+  - Health factor
+  - Last updated timestamp
+- Lists the user's transaction history with:
+  - Transaction hash
+  - Transaction type (formatted for readability)
+  - Block number
+  - Timestamp
+
+### Usage
+
+```bash
+node userTransactions.js [userAddress] [blockNumber]
+```
+
+If no parameters are provided, the script uses the default USER_ADDRESS and BLOCK_NUMBER from common.js.
+
 ## topSuppliers.js
 
 This script identifies the top 3 vault suppliers of USDC in the cbBTC/USDC market on Base.
