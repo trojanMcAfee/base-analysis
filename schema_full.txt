@@ -1,0 +1,332 @@
+Querying GraphQL schema...
+
+Available Query Fields:
+- chainSynchronizationStates
+- chainSynchronizationState
+  Arguments:
+    key: NON_NULL
+      (of type: String)
+    chainId: NON_NULL
+      (of type: Int)
+- chain
+  Arguments:
+    id: NON_NULL
+      (of type: Int)
+- chains
+- asset
+  Arguments:
+    id: NON_NULL
+      (of type: String)
+- assetByAddress
+  Arguments:
+    address: NON_NULL
+      (of type: String)
+    chainId: Int
+- assets
+  Arguments:
+    first: Int
+    skip: Int
+    where: AssetsFilters
+    orderBy: AssetOrderBy
+    orderDirection: OrderDirection
+- transaction
+  Arguments:
+    id: NON_NULL
+      (of type: String)
+- transactions
+  Arguments:
+    first: Int
+    skip: Int
+    orderBy: TransactionsOrderBy
+    orderDirection: OrderDirection
+    where: TransactionFilters
+- user
+  Arguments:
+    id: NON_NULL
+      (of type: String)
+- userByAddress
+  Arguments:
+    address: NON_NULL
+      (of type: String)
+    chainId: Int
+- users
+  Arguments:
+    first: Int
+    skip: Int
+    orderBy: UsersOrderBy
+    orderDirection: OrderDirection
+    where: UsersFilters
+- marketCollateralAtRisk
+  Arguments:
+    uniqueKey: NON_NULL
+      (of type: String)
+    chainId: Int
+    numberOfPoints: Float
+- market
+  Arguments:
+    id: NON_NULL
+      (of type: String)
+- marketByUniqueKey
+  Arguments:
+    uniqueKey: NON_NULL
+      (of type: String)
+    chainId: Int
+- marketAverageApys
+  Arguments:
+    uniqueKey: NON_NULL
+      (of type: String)
+    chainId: Int
+    startTimestamp: NON_NULL
+      (of type: Float)
+- markets
+  Arguments:
+    first: Int
+    skip: Int
+    orderBy: MarketOrderBy
+    orderDirection: OrderDirection
+    where: MarketFilters
+- curators
+  Arguments:
+    first: Int
+    skip: Int
+    where: CuratorFilters
+- marketOracleAccuracy
+  Arguments:
+    marketId: NON_NULL
+      (of type: String)
+    options: TimeseriesOptions
+- morphoBlue
+  Arguments:
+    id: NON_NULL
+      (of type: String)
+- morphoBlueByAddress
+  Arguments:
+    address: NON_NULL
+      (of type: String)
+    chainId: Int
+- morphoBlues
+  Arguments:
+    first: Int
+    skip: Int
+    orderBy: MorphoBlueOrderBy
+    orderDirection: OrderDirection
+    where: MorphoBlueFilters
+- marketPosition
+  Arguments:
+    userAddress: NON_NULL
+      (of type: String)
+    marketUniqueKey: NON_NULL
+      (of type: String)
+    chainId: Int
+- marketPositions
+  Arguments:
+    first: Int
+    skip: Int
+    orderBy: MarketPositionOrderBy
+    orderDirection: OrderDirection
+    where: MarketPositionFilters
+- oracleFeedByAddress
+  Arguments:
+    address: NON_NULL
+      (of type: String)
+    chainId: Int
+- oracleFeeds
+  Arguments:
+    first: Int
+    skip: Int
+    where: OracleFeedsFilters
+- oracleVaultByAddress
+  Arguments:
+    address: NON_NULL
+      (of type: String)
+    chainId: Int
+- oracleVaults
+  Arguments:
+    first: Int
+    skip: Int
+    where: OracleVaultsFilters
+- oracleByAddress
+  Arguments:
+    address: NON_NULL
+      (of type: String)
+    chainId: Int
+- oracles
+  Arguments:
+    first: Int
+    skip: Int
+    where: OraclesFilters
+- publicAllocator
+  Arguments:
+    address: NON_NULL
+      (of type: String)
+    chainId: Int
+- publicAllocators
+  Arguments:
+    first: Int
+    skip: Int
+    orderBy: PublicAllocatorOrderBy
+    orderDirection: OrderDirection
+    where: PublicAllocatorFilters
+- publicAllocatorReallocates
+  Arguments:
+    first: Int
+    skip: Int
+    orderBy: PublicAllocatorReallocateOrderBy
+    orderDirection: OrderDirection
+    where: PublicallocatorReallocateFilters
+- search
+  Arguments:
+    search: NON_NULL
+      (of type: String)
+    marketOrderBy: MarketOrderBy
+    vaultOrderBy: VaultOrderBy
+    numberOfResults: Int
+    chainId_in: LIST
+      (of type: NON_NULL)
+- vaultFactory
+  Arguments:
+    id: NON_NULL
+      (of type: String)
+- vaultFactoryByAddress
+  Arguments:
+    address: NON_NULL
+      (of type: String)
+    chainId: Int
+- vaultFactories
+- vault
+  Arguments:
+    id: NON_NULL
+      (of type: String)
+- vaultByAddress
+  Arguments:
+    address: NON_NULL
+      (of type: String)
+    chainId: Int
+- vaults
+  Arguments:
+    first: Int
+    skip: Int
+    orderBy: VaultOrderBy
+    orderDirection: OrderDirection
+    where: VaultFilters
+- vaultPosition
+  Arguments:
+    userAddress: NON_NULL
+      (of type: String)
+    vaultAddress: NON_NULL
+      (of type: String)
+    chainId: Int
+- vaultPositions
+  Arguments:
+    first: Int
+    skip: Int
+    orderBy: VaultPositionOrderBy
+    orderDirection: OrderDirection
+    where: VaultPositionFilters
+- vaultReallocates
+  Arguments:
+    first: Int
+    skip: Int
+    orderBy: VaultReallocateOrderBy
+    orderDirection: OrderDirection
+    where: VaultReallocateFilters
+
+Looking for types related to positions or accounts:
+
+Type: MarketPositionHistory
+  Fields:
+    - collateral: LIST
+        (of type: NON_NULL)
+    - collateralValue: LIST
+        (of type: NON_NULL)
+    - collateralUsd: LIST
+        (of type: NON_NULL)
+    - supplyAssets: LIST
+        (of type: NON_NULL)
+    - supplyAssetsUsd: LIST
+        (of type: NON_NULL)
+    - supplyShares: LIST
+        (of type: NON_NULL)
+    - borrowAssets: LIST
+        (of type: NON_NULL)
+    - borrowAssetsUsd: LIST
+        (of type: NON_NULL)
+    - borrowShares: LIST
+        (of type: NON_NULL)
+
+Type: MarketPositionState
+  Fields:
+    - id: NON_NULL
+        (of type: ID)
+    - timestamp: NON_NULL
+        (of type: BigInt)
+    - collateral: NON_NULL
+        (of type: BigInt)
+    - collateralValue: BigInt
+    - collateralUsd: Float
+    - supplyAssets: BigInt
+    - supplyAssetsUsd: Float
+    - supplyShares: NON_NULL
+        (of type: BigInt)
+    - borrowAssets: BigInt
+    - borrowAssetsUsd: Float
+    - borrowShares: NON_NULL
+        (of type: BigInt)
+    - position: MarketPosition
+
+Type: MarketPosition
+  Fields:
+    - id: NON_NULL
+        (of type: ID)
+    - healthFactor: Float
+    - priceVariationToLiquidationPrice: Float
+    - state: MarketPositionState
+    - historicalState: MarketPositionHistory
+    - user: NON_NULL
+        (of type: User)
+    - market: NON_NULL
+        (of type: Market)
+
+Type: VaultPositionState
+  Fields:
+    - id: NON_NULL
+        (of type: ID)
+    - timestamp: NON_NULL
+        (of type: BigInt)
+    - assets: BigInt
+    - assetsUsd: Float
+    - shares: NON_NULL
+        (of type: BigInt)
+    - position: VaultPosition
+
+Type: VaultPositionHistory
+  Fields:
+    - assets: LIST
+        (of type: NON_NULL)
+    - assetsUsd: LIST
+        (of type: NON_NULL)
+    - shares: LIST
+        (of type: NON_NULL)
+
+Type: VaultPosition
+  Fields:
+    - id: NON_NULL
+        (of type: ID)
+    - state: VaultPositionState
+    - historicalState: VaultPositionHistory
+    - user: NON_NULL
+        (of type: User)
+    - vault: NON_NULL
+        (of type: Vault)
+
+Type: PaginatedMetaMorphoPositions
+  Fields:
+    - items: LIST
+        (of type: NON_NULL)
+    - pageInfo: PageInfo
+
+Type: PaginatedMarketPositions
+  Fields:
+    - items: LIST
+        (of type: NON_NULL)
+    - pageInfo: PageInfo
