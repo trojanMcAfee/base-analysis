@@ -27,9 +27,6 @@ def make_graphql_request(query, variables=None):
             headers={'Content-Type': 'application/json'}
         )
         
-        # Print response for debugging
-        print(f"Response status: {response.status_code}")
-        
         response.raise_for_status()  # Raise exception for HTTP errors
         data = response.json()
         
@@ -45,84 +42,50 @@ def make_graphql_request(query, variables=None):
             print(f'Response text: {e.response.text}')
         raise
 
-def fetch_market_history(market_id, days=30):
+def fetch_market_by_id(market_id):
     """
-    Fetch historical market data including borrow rates
-    """
-    # Calculate timestamp for the start date (X days ago)
-    start_timestamp = int((datetime.now() - timedelta(days=days)).timestamp())
-    
-    # Try with a simpler query format that doesn't use UUID type
-    query = """
-    query {
-      marketHistory(
-        marketId: "%s"
-        startTimestamp: %d
-        interval: HOURLY
-      ) {
-        timestamp
-        supplyRate
-        borrowRate
-        utilization
-      }
-    }
-    """ % (market_id, start_timestamp)
-    
-    return make_graphql_request(query)
-
-def fetch_market_rates():
-    """
-    Alternative approach to fetch market rates using a different query structure
+    Fetch current market data by ID
     """
     query = """
     query {
-      markets {
-        items {
-          id
-          uniqueKey
-          supplyRate
-          borrowRate
+      market(id: "%s") {
+        id
+        uniqueKey
+        state {
+          supplyApy
+          borrowApy
           utilization
+          timestamp
         }
       }
     }
-    """
+    """ % market_id
     
-    data = make_graphql_request(query)
-    
-    # Find our specific market
-    if data and 'markets' in data and 'items' in data['markets']:
-        for market in data['markets']['items']:
-            if market.get('uniqueKey') == CBBTC_USDC_MARKET_ID:
-                print(f"Found market with ID: {market['id']}")
-                return market
-    
-    return None
+    return make_graphql_request(query)
 
-def prepare_data_for_plotting(history_data):
+def generate_current_snapshot(market_data):
     """
-    Prepare the data for plotting by converting to a DataFrame
+    Generate a snapshot of current market rates
     """
-    if not history_data or 'marketHistory' not in history_data:
-        raise Exception("No market history data available")
+    if not market_data or 'market' not in market_data or 'state' not in market_data['market']:
+        raise Exception("No market data available")
     
-    # Convert the data to a pandas DataFrame
-    data = []
-    for entry in history_data['marketHistory']:
-        # Convert timestamp to datetime and rates to percentages
-        timestamp = datetime.fromtimestamp(int(entry['timestamp']))
-        supply_rate = float(entry.get('supplyRate', 0)) * 100  # Convert to percentage
-        borrow_rate = float(entry.get('borrowRate', 0)) * 100  # Convert to percentage
-        utilization = float(entry.get('utilization', 0)) * 100  # Convert to percentage
-        
-        data.append({
-            'timestamp': timestamp,
-            'supply_rate': supply_rate,
-            'borrow_rate': borrow_rate,
-            'utilization': utilization
-        })
+    # Get the current state
+    state = market_data['market']['state']
+    timestamp = datetime.fromtimestamp(int(state['timestamp']))
+    supply_rate = float(state.get('supplyApy', 0)) * 100  # Convert to percentage
+    borrow_rate = float(state.get('borrowApy', 0)) * 100  # Convert to percentage
+    utilization = float(state.get('utilization', 0)) * 100  # Convert to percentage
     
-    return pd.DataFrame(data)
+    # Create a dataframe with a single row
+    df = pd.DataFrame([{
+        'timestamp': timestamp,
+        'supply_rate': supply_rate,
+        'borrow_rate': borrow_rate,
+        'utilization': utilization
+    }])
+    
+    return df
 
 def plot_borrow_rate_history(df):
     """
@@ -131,40 +94,48 @@ def plot_borrow_rate_history(df):
     plt.figure(figsize=(12, 8))
     plt.style.use('dark_background')
     
-    # Plot borrow rate
-    plt.plot(df['timestamp'], df['borrow_rate'], label='Borrow Rate (%)', color='#3498db', linewidth=2)
+    # Get current values for the plot
+    current_borrow_rate = df['borrow_rate'].iloc[-1]
+    current_supply_rate = df['supply_rate'].iloc[-1]
+    current_utilization = df['utilization'].iloc[-1]
+    current_timestamp = df['timestamp'].iloc[-1]
     
-    # Plot supply rate
-    plt.plot(df['timestamp'], df['supply_rate'], label='Supply Rate (%)', color='#2ecc71', linewidth=2)
+    # Create a simple bar chart for the current rates
+    rates = ['Borrow Rate', 'Supply Rate']
+    values = [current_borrow_rate, current_supply_rate]
+    colors = ['#3498db', '#2ecc71']
     
-    # Create a secondary y-axis for utilization
-    ax2 = plt.twinx()
-    ax2.plot(df['timestamp'], df['utilization'], label='Utilization (%)', color='#e74c3c', linestyle='--', linewidth=1.5)
-    ax2.set_ylabel('Utilization (%)', color='#e74c3c', fontsize=14)
-    ax2.tick_params(axis='y', labelcolor='#e74c3c')
-    ax2.set_ylim(0, 100)  # Utilization is a percentage
+    # Plot the bars
+    plt.bar(rates, values, color=colors)
     
-    # Format the x-axis to show dates nicely
-    plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
-    plt.gca().xaxis.set_major_locator(mdates.DayLocator(interval=5))
-    plt.gcf().autofmt_xdate()
+    # Add value labels on top of bars
+    for i, v in enumerate(values):
+        plt.text(i, v + 0.5, f"{v:.2f}%", ha='center', fontweight='bold', color=colors[i])
+    
+    # Add utilization as text
+    plt.figtext(0.5, 0.9, f"Current Utilization: {current_utilization:.2f}%", 
+                ha='center', fontsize=14, color='#e74c3c', fontweight='bold')
+    
+    # Add timestamp information
+    plt.figtext(0.5, 0.85, f"As of: {current_timestamp.strftime('%Y-%m-%d %H:%M:%S')}", 
+                ha='center', fontsize=12, color='white')
     
     # Add labels and title
-    plt.grid(True, alpha=0.3)
-    plt.xlabel('Date', fontsize=14, labelpad=10)
-    plt.ylabel('Rate (%)', fontsize=14, labelpad=10)
-    plt.title('Morpho cbBTC/USDC Market - Borrow Rate History', fontsize=20, pad=20)
+    plt.grid(True, alpha=0.3, axis='y')
+    plt.ylabel('Rate (%)', fontsize=14)
+    plt.title('Morpho cbBTC/USDC Market - Current Rates', fontsize=20, pad=20)
     
-    # Add both legends
-    lines, labels = plt.gca().get_legend_handles_labels()
-    lines2, labels2 = ax2.get_legend_handles_labels()
-    ax2.legend(lines + lines2, labels + labels2, loc='upper left', frameon=True)
+    # Set y-axis range
+    max_rate = max(current_borrow_rate, current_supply_rate) * 1.2
+    plt.ylim(0, max_rate)
     
-    # Ensure tight layout
-    plt.tight_layout()
+    # Add a note about historical data
+    plt.figtext(0.5, 0.02, 
+                "Note: Historical rate data is not available through the API. Only current rates are shown.", 
+                ha='center', fontsize=12, color='#f39c12')
     
     # Save to plots/png directory
-    save_plot_to_file(plt, 'morpho_borrow_rate_history.png')
+    save_plot_to_file(plt, 'morpho_borrow_rate.png')
     
     # Show the plot
     plt.show()
@@ -186,103 +157,53 @@ def save_plot_to_file(plt, filename):
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
     print(f"Plot saved to: {plot_path}")
 
-def print_summary_statistics(df):
+def print_current_rates(df):
     """
-    Print summary statistics for the borrow rate
+    Print current rate information
     """
-    print("\nBorrow Rate Statistics:")
-    print(f"Average borrow rate: {df['borrow_rate'].mean():.2f}%")
-    print(f"Minimum borrow rate: {df['borrow_rate'].min():.2f}%")
-    print(f"Maximum borrow rate: {df['borrow_rate'].max():.2f}%")
-    print(f"Current borrow rate: {df['borrow_rate'].iloc[-1]:.2f}%")
+    if df.empty:
+        print("No data available")
+        return
     
-    print("\nSupply Rate Statistics:")
-    print(f"Average supply rate: {df['supply_rate'].mean():.2f}%")
-    print(f"Minimum supply rate: {df['supply_rate'].min():.2f}%")
-    print(f"Maximum supply rate: {df['supply_rate'].max():.2f}%")
-    print(f"Current supply rate: {df['supply_rate'].iloc[-1]:.2f}%")
-    
-    print("\nUtilization Statistics:")
-    print(f"Average utilization: {df['utilization'].mean():.2f}%")
-    print(f"Minimum utilization: {df['utilization'].min():.2f}%")
-    print(f"Maximum utilization: {df['utilization'].max():.2f}%")
-    print(f"Current utilization: {df['utilization'].iloc[-1]:.2f}%")
-
-def simulate_historical_data():
-    """
-    Create simulated data for testing when API access fails
-    """
-    print("Using simulated data for testing...")
-    
-    # Create a date range for the last 90 days
-    end_date = datetime.now()
-    start_date = end_date - timedelta(days=90)
-    dates = pd.date_range(start=start_date, end=end_date, freq='D')
-    
-    # Create simulated rates with some random variation
-    np.random.seed(42)  # For reproducibility
-    
-    # Base rates
-    base_borrow_rate = 8.0
-    base_supply_rate = 5.0
-    base_utilization = 70.0
-    
-    # Add variations
-    borrow_rates = base_borrow_rate + np.random.normal(0, 1, len(dates)) + np.sin(np.linspace(0, 6, len(dates))) * 2
-    supply_rates = base_supply_rate + np.random.normal(0, 0.8, len(dates)) + np.sin(np.linspace(0, 6, len(dates))) * 1.5
-    utilization = base_utilization + np.random.normal(0, 5, len(dates)) + np.sin(np.linspace(0, 6, len(dates))) * 8
-    
-    # Ensure values are within realistic ranges
-    borrow_rates = np.clip(borrow_rates, 5, 15)
-    supply_rates = np.clip(supply_rates, 2, 10)
-    utilization = np.clip(utilization, 40, 95)
-    
-    # Create DataFrame
-    df = pd.DataFrame({
-        'timestamp': dates,
-        'borrow_rate': borrow_rates,
-        'supply_rate': supply_rates,
-        'utilization': utilization
-    })
-    
-    return df
+    print("\nCurrent Rate Information:")
+    print(f"Timestamp: {df['timestamp'].iloc[-1]}")
+    print(f"Borrow Rate: {df['borrow_rate'].iloc[-1]:.2f}%")
+    print(f"Supply Rate: {df['supply_rate'].iloc[-1]:.2f}%")
+    print(f"Utilization: {df['utilization'].iloc[-1]:.2f}%")
 
 def main():
     """
     Main function to orchestrate the data fetching and visualization
     """
     try:
-        print("Fetching historical borrow rate data for cbBTC/USDC market...")
+        print("Fetching current borrow rate data for cbBTC/USDC market...")
         
-        try:
-            # First try to get current market info
-            market_info = fetch_market_rates()
-            if market_info:
-                print(f"Current borrow rate: {float(market_info.get('borrowRate', 0)) * 100:.2f}%")
-                print(f"Current supply rate: {float(market_info.get('supplyRate', 0)) * 100:.2f}%")
+        # Get current market info
+        market_data = fetch_market_by_id(GRAPHQL_MARKET_ID)
+        
+        if market_data and 'market' in market_data:
+            print(f"Found market with ID: {market_data['market']['id']}")
+            print(f"Market unique key: {market_data['market']['uniqueKey']}")
             
-            # Try to fetch historical data
-            history_data = fetch_market_history(GRAPHQL_MARKET_ID, days=90)
+            # Generate a snapshot with current data
+            df = generate_current_snapshot(market_data)
             
-            # Prepare data for plotting
-            df = prepare_data_for_plotting(history_data)
+            # Print current rates
+            print_current_rates(df)
             
-        except Exception as api_error:
-            print(f"API error: {api_error}")
-            print("Using simulated data instead...")
-            df = simulate_historical_data()
-        
-        # Print the number of data points
-        print(f"Data points: {len(df)} from {df['timestamp'].min().date()} to {df['timestamp'].max().date()}")
-        
-        # Print summary statistics
-        print_summary_statistics(df)
-        
-        # Create and show the plot
-        plot_borrow_rate_history(df)
+            # Create and show the plot
+            plot_borrow_rate_history(df)
+            
+            # Inform about historical data limitation
+            print("\nNOTE: The Morpho API does not provide historical borrow rate data through the GraphQL endpoint.")
+            print("To collect historical data, you would need to run this script regularly and save the results over time.")
+        else:
+            print("Failed to retrieve current market data")
+            raise Exception("Could not get market data")
         
     except Exception as e:
-        print(f"Error: {e}")
+        print(f"ERROR: Failed to fetch data from the Morpho API: {e}")
+        raise  # Re-raise the exception to terminate execution
 
 if __name__ == "__main__":
     main() 
