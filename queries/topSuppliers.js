@@ -1,5 +1,6 @@
 import fetch from 'node-fetch';
 import { MORPHO_GRAPHQL_ENDPOINT, GRAPHQL_MARKET_ID } from './state/common.js';
+import { fetchMarketById } from './supplyBorrowLiq.js';
 
 // Function to make a GraphQL request
 async function makeGraphQLRequest(query, variables = {}) {
@@ -74,7 +75,17 @@ async function main() {
   try {
     console.log('Fetching top USDC suppliers for cbBTC/USDC market on Base...');
     
-    // Parameters for fetching more data than we need to ensure we have enough
+    // First, fetch the market data to get the total supply amount
+    const marketData = await fetchMarketById(GRAPHQL_MARKET_ID);
+    if (!marketData.market || !marketData.market.state) {
+      console.error('Failed to fetch market data');
+      return;
+    }
+    
+    const totalSupply = parseFloat(marketData.market.state.supplyAssets) / (10 ** marketData.market.loanAsset.decimals);
+    console.log(`Total USDC supplied to cbBTC/USDC market: ${totalSupply.toLocaleString(undefined, { maximumFractionDigits: 2 })} USDC`);
+    
+    // Parameters for fetching suppliers
     const batchSize = 100;
     let skip = 0;
     let allSuppliers = [];
@@ -95,10 +106,14 @@ async function main() {
         const supplyAmount = position.supplyAssets ? parseFloat(position.supplyAssets) / decimalFactor : 0;
         const supplyUsd = position.state.supplyAssetsUsd ? parseFloat(position.state.supplyAssetsUsd) : supplyAmount; // For USDC, 1:1 with USD
         
+        // Calculate percentage of total
+        const percentOfTotal = totalSupply > 0 ? (supplyAmount / totalSupply) * 100 : 0;
+        
         return {
           userAddress: userAddress,
           suppliedUSDC: supplyAmount,
           suppliedUSD: supplyUsd,
+          percentOfTotal: percentOfTotal,
           lastUpdated: position.state.timestamp ? new Date(parseInt(position.state.timestamp) * 1000).toISOString() : 'N/A'
         };
       });
@@ -118,11 +133,12 @@ async function main() {
     console.log('\nTop 3 USDC Suppliers for cbBTC/USDC Market:');
     console.log('---------------------------------------------');
     
-    // Display the top 3 suppliers
+    // Display the top 3 suppliers with percentage
     top3Suppliers.forEach((supplier, index) => {
       console.log(`#${index + 1}: ${supplier.userAddress}`);
       console.log(`   Supplied USDC: ${supplier.suppliedUSDC.toLocaleString(undefined, { maximumFractionDigits: 2 })}`);
       console.log(`   USD Value: $${supplier.suppliedUSD.toLocaleString(undefined, { maximumFractionDigits: 2 })}`);
+      console.log(`   % of Total Supply: ${supplier.percentOfTotal.toFixed(2)}%`);
       console.log(`   Last Updated: ${supplier.lastUpdated}`);
       console.log('---------------------------------------------');
     });

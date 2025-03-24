@@ -17,6 +17,23 @@ This script fetches market data for the cbBTC/USDC market on Base from Morpho's 
 node supplyBorrowLiq.js
 ```
 
+## topSuppliers.js
+
+This script identifies the top 3 vault suppliers of USDC in the cbBTC/USDC market on Base.
+
+### Key Features
+- Queries all suppliers in the cbBTC/USDC market on Base using Morpho's GraphQL API
+- Fetches the total market supply to calculate percentage contributions
+- Ranks suppliers by USDC amount supplied
+- Displays the top 3 suppliers with their addresses, supplied amounts, and percentage of total market supply
+- Shows when each supplier position was last updated
+
+### Usage
+
+```bash
+node topSuppliers.js
+```
+
 ## borrowRate.js
 
 This script fetches the current borrowing rate for the cbBTC/USDC market from Morpho's GraphQL API.
