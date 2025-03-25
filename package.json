@@ -6,5 +6,8 @@
     "dotenv": "^16.4.7",
     "node-fetch": "^3.3.2",
     "web3": "^4.5.0"
+  },
+  "scripts": {
+    "start": "node query_morpho_deployment.js"
   }
 }

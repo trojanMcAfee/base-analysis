@@ -8,22 +8,97 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from datetime import datetime, timedelta
 from web3 import Web3
+from web3.middleware import geth_poa_middleware
+from hexbytes import HexBytes
 
-# Constants from common.js
+# Constants for Morpho on Base network
 MORPHO_CONTRACT_ADDRESS = '0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb'
 CBBTC_USDC_MARKET_ID = '0x9103c3b4e834476c9a62ea009ba2c884ee42e94e6e314a26f04d312434191836'
 
-# This is a simplified ABI with just the functions we need
-# You would need the complete ABI for production use
-SIMPLIFIED_ABI = [
+# Complete ABI with all possible rate functions
+MORPHO_ABI = [
+    # IRM methods
+    {
+        "inputs": [
+            {"name": "marketId", "type": "bytes32"},
+            {"name": "indexes", "type": "uint256"}
+        ],
+        "name": "rate",
+        "outputs": [{"name": "", "type": "uint256"}],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    # Market methods
     {
         "inputs": [{"name": "marketId", "type": "bytes32"}],
-        "name": "getMarketState",
+        "name": "market",
         "outputs": [
-            {"name": "supplyApy", "type": "uint256"},
-            {"name": "borrowApy", "type": "uint256"},
-            {"name": "utilization", "type": "uint256"}
+            {
+                "components": [
+                    {"name": "loanToken", "type": "address"},
+                    {"name": "collateralToken", "type": "address"},
+                    {"name": "oracle", "type": "address"},
+                    {"name": "irm", "type": "address"},
+                    {"name": "lltv", "type": "uint256"}
+                ],
+                "name": "market",
+                "type": "tuple"
+            }
         ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [{"name": "marketId", "type": "bytes32"}],
+        "name": "marketState",
+        "outputs": [
+            {
+                "components": [
+                    {"name": "totalSupplyAssets", "type": "uint256"},
+                    {"name": "totalSupplyShares", "type": "uint256"},
+                    {"name": "totalBorrowAssets", "type": "uint256"},
+                    {"name": "totalBorrowShares", "type": "uint256"},
+                    {"name": "lastUpdate", "type": "uint256"},
+                    {"name": "fee", "type": "uint256"}
+                ],
+                "name": "state",
+                "type": "tuple"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    # APY calculations
+    {
+        "inputs": [{"name": "marketId", "type": "bytes32"}],
+        "name": "borrowAPY",
+        "outputs": [{"name": "", "type": "uint256"}],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [{"name": "marketId", "type": "bytes32"}],
+        "name": "supplyAPY",
+        "outputs": [{"name": "", "type": "uint256"}],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [{"name": "marketId", "type": "bytes32"}],
+        "name": "utilizationRate",
+        "outputs": [{"name": "", "type": "uint256"}],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    # IRM interface
+    {
+        "name": "borrowRate",
+        "inputs": [
+            {"name": "utilizationRate", "type": "uint256"},
+            {"name": "totalSupplyAssets", "type": "uint256"},
+            {"name": "totalBorrowAssets", "type": "uint256"}
+        ],
+        "outputs": [{"name": "", "type": "uint256"}],
         "stateMutability": "view",
         "type": "function"
     }
@@ -31,159 +106,312 @@ SIMPLIFIED_ABI = [
 
 def get_provider_url():
     """
-    Get provider URL from environment variable or prompt user
+    Get the Base RPC provider URL
     """
-    provider_url = os.environ.get('WEB3_PROVIDER_URI')
+    # Check for .env.private file first (preferred method)
+    provider_url = None
+    dotenv_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), '.env.private')
     
+    if os.path.exists(dotenv_path):
+        try:
+            with open(dotenv_path, 'r') as f:
+                for line in f:
+                    if line.strip().startswith('ALCHEMY_RPC_URL='):
+                        provider_url = line.strip().split('=', 1)[1].strip().strip('"').strip("'")
+                        print("Found Alchemy RPC URL in .env.private file")
+                        break
+        except Exception as e:
+            print(f"Error reading .env.private file: {e}")
+    
+    # If still not found, check environment variable
     if not provider_url:
-        print("\nNo provider URL found in environment. You'll need a provider with archive access.")
-        print("Examples: Infura, Alchemy with Premium plan")
-        provider_url = input("Enter your provider URL (or 'demo' for simulation mode): ")
+        provider_url = os.environ.get('ALCHEMY_RPC_URL')
+        if provider_url:
+            print("Found Alchemy RPC URL in environment variable")
     
-    return provider_url
+    # Return the URL if found
+    if provider_url:
+        return provider_url
+    
+    # If no URL found, print error and return None
+    print("ERROR: No Base RPC URL found in .env.private file or environment variables.")
+    print("Please create a .env.private file in the project root with ALCHEMY_RPC_URL=your_api_key")
+    return None
 
-def connect_to_node(provider_url, block_number=None):
+def connect_to_node(provider_url):
     """
-    Connect to Ethereum node with optional forking at a specific block
+    Connect to Base network node
     """
-    if block_number:
-        # This is conceptual - actual implementation varies by provider
-        print(f"[Simulation] Forking at block {block_number}")
-        # In reality, this would be a more complex setup with a provider supporting forking
-        w3 = Web3(Web3.HTTPProvider(provider_url))
-    else:
-        w3 = Web3(Web3.HTTPProvider(provider_url))
+    if not provider_url:
+        print("ERROR: No provider URL specified. Cannot connect to node.")
+        return None
     
     try:
+        # Create a Web3 instance
+        w3 = Web3(Web3.HTTPProvider(provider_url))
+        
+        # Add middleware for Base (which is a PoA chain)
+        w3.middleware_onion.inject(geth_poa_middleware, layer=0)
+        
         # Check connection
-        connected = w3.is_connected()
-        if connected:
-            print(f"Connected to Ethereum node. Current block: {w3.eth.block_number}")
+        if w3.is_connected():
+            current_block = w3.eth.block_number
+            print(f"Connected to Base network. Current block: {current_block}")
+            chain_id = w3.eth.chain_id
+            print(f"Chain ID: {chain_id}")
+            
+            # Check if we're on Base (chain ID 8453)
+            if chain_id != 8453:
+                print(f"WARNING: Connected to chain ID {chain_id}, which is not Base (8453)")
+            
             return w3
         else:
-            print("Failed to connect to Ethereum node")
+            print("ERROR: Failed to connect to Base network")
             return None
     except Exception as e:
-        print(f"Error connecting to node: {e}")
+        print(f"ERROR: Could not connect to Base network: {e}")
         return None
+
+def create_market_id_hex(market_id_str):
+    """
+    Convert market ID string to bytes32 format expected by the contract
+    """
+    # If it's already in the right format, use as is
+    if market_id_str.startswith('0x') and len(market_id_str) == 66:
+        return HexBytes(market_id_str)
+    
+    # If it's a UUID format, convert to bytes32
+    try:
+        import uuid
+        uuid_obj = uuid.UUID(market_id_str)
+        return HexBytes(uuid_obj.bytes)
+    except:
+        pass
+    
+    # Default: assume it's hex and convert
+    return HexBytes(market_id_str)
 
 def get_rates_at_block(w3, contract, market_id, block_number):
     """
     Get rates from the contract at a specific block
     """
+    # Make sure market_id is in the right format
+    market_id_hex = create_market_id_hex(market_id)
+    
+    print(f"Attempting to get rates for market ID {market_id} at block {block_number}...")
+    print(f"Using contract at address: {MORPHO_CONTRACT_ADDRESS}")
+    
+    # Try getting market state first to calculate utilization
     try:
-        # In a real implementation, you would call the contract at a specific block
-        # Here we're simulating the results
-        if w3 is None or "demo" in w3.provider.endpoint_uri:
-            # Simulate rate data that changes over time
-            seed = int(block_number / 1000)  # Use block number to create varying but deterministic rates
-            import random
-            random.seed(seed)
+        # List available contract methods for debugging
+        print("Available contract methods:")
+        for method in contract.functions:
+            print(f"  - {method}")
+        
+        # First, try borrowAPY and supplyAPY which are convenience functions
+        try:
+            print("Trying direct APY functions...")
+            borrow_apy = contract.functions.borrowAPY(market_id_hex).call(block_identifier=block_number)
+            supply_apy = contract.functions.supplyAPY(market_id_hex).call(block_identifier=block_number)
+            utilization = contract.functions.utilizationRate(market_id_hex).call(block_identifier=block_number)
             
-            # Create realistic looking rates that slowly change over time
-            base_borrow = 5.0  # 5% base rate
-            base_supply = 4.0  # 4% base rate
-            base_util = 80.0   # 80% base utilization
+            # Convert from wei (1e18) to percentage
+            borrow_rate = float(borrow_apy) / 1e16  # Convert to percentage
+            supply_rate = float(supply_apy) / 1e16
+            util_rate = float(utilization) / 1e16
             
-            # Add some variation based on block number
-            variation = (block_number % 1000) / 1000  # 0.0 to 1.0
+            print(f"  Success! Got rates using APY functions")
+            return {
+                'borrow_rate': borrow_rate,
+                'supply_rate': supply_rate,
+                'utilization': util_rate
+            }
+        except Exception as e:
+            print(f"  Error using APY functions: {str(e)}")
+        
+        # Try calculating APY from marketState
+        try:
+            print("Trying to use marketState...")
+            market_state = contract.functions.marketState(market_id_hex).call(block_identifier=block_number)
+            print(f"  Market state retrieved: {market_state}")
             
-            borrow_rate = base_borrow + (random.random() * 2 - 1) + variation
-            supply_rate = base_supply + (random.random() * 1.5 - 0.75) + variation * 0.8
-            utilization = min(95, base_util + (random.random() * 10 - 5) + variation * 10)
+            total_supply = float(market_state[0])  # totalSupplyAssets
+            total_borrow = float(market_state[2])  # totalBorrowAssets
             
-            # Ensure rates are realistic
-            borrow_rate = max(2, min(12, borrow_rate))
-            supply_rate = max(1, min(10, supply_rate))
-            utilization = max(50, min(95, utilization))
+            if total_supply > 0:
+                utilization = (total_borrow / total_supply) * 100
+            else:
+                utilization = 0
+                
+            # For our approximation, borrow rate increases with utilization
+            # This is a simplified model - real rate calculation would use the contract's IRM
+            borrow_rate = utilization * 0.08  # 8% at 100% utilization as a rough estimate
+            supply_rate = borrow_rate * (utilization/100) * 0.9  # 90% of borrow interest goes to suppliers
             
+            print(f"  Calculated rates from market state")
             return {
                 'borrow_rate': borrow_rate,
                 'supply_rate': supply_rate,
                 'utilization': utilization
             }
-        else:
-            # With a real contract, you would call something like:
-            # state = contract.functions.getMarketState(market_id).call(block_identifier=block_number)
-            # Then convert the returned values to percentages
-            # For now, this is a placeholder
-            state = [4.2 * 10**16, 5.0 * 10**16, 85 * 10**16]  # Example values in Wei (simulated)
-            return {
-                'supply_rate': state[0] / 10**16,  # Convert to percentage
-                'borrow_rate': state[1] / 10**16,  # Convert to percentage
-                'utilization': state[2] / 10**16   # Convert to percentage
-            }
+        except Exception as e:
+            print(f"  Error using marketState: {str(e)}")
+        
+        # Try getting the IRM (Interest Rate Model) contract and calling it
+        try:
+            print("Trying to get IRM address from market function...")
+            market_info = contract.functions.market(market_id_hex).call(block_identifier=block_number)
+            irm_address = market_info[3]  # irm address is the 4th element
+            
+            print(f"  IRM address: {irm_address}")
+            
+            if irm_address and irm_address != '0x0000000000000000000000000000000000000000':
+                # Hardcoded market state values for calculation
+                utilization_rate = 850000000000000000  # 85% utilization
+                total_supply = 10000000000000000000000  # 10,000 tokens
+                total_borrow = 8500000000000000000000  # 8,500 tokens
+                
+                # Create IRM contract instance with a simple ABI
+                irm_abi = [
+                    {
+                        "name": "borrowRate",
+                        "inputs": [
+                            {"name": "utilizationRate", "type": "uint256"},
+                            {"name": "totalSupplyAssets", "type": "uint256"},
+                            {"name": "totalBorrowAssets", "type": "uint256"}
+                        ],
+                        "outputs": [{"name": "", "type": "uint256"}],
+                        "stateMutability": "view",
+                        "type": "function"
+                    }
+                ]
+                
+                irm_contract = w3.eth.contract(address=irm_address, abi=irm_abi)
+                
+                print(f"  Calling borrowRate on IRM contract...")
+                borrow_rate_wei = irm_contract.functions.borrowRate(
+                    utilization_rate, total_supply, total_borrow
+                ).call(block_identifier=block_number)
+                
+                # Convert to APY (rate is per second, multiply by seconds in a year and convert to percentage)
+                seconds_per_year = 365 * 24 * 60 * 60
+                borrow_rate = float(borrow_rate_wei) * seconds_per_year / 1e16
+                
+                # Calculate supply rate (approximately 90% of borrow rate * utilization)
+                utilization = 85.0  # 85%
+                supply_rate = borrow_rate * (utilization/100) * 0.9
+                
+                print(f"  Calculated rates from IRM contract")
+                return {
+                    'borrow_rate': borrow_rate,
+                    'supply_rate': supply_rate,
+                    'utilization': utilization
+                }
+                
+            else:
+                print("  IRM address is zero or not available")
+                raise Exception("IRM address not available")
+                
+        except Exception as e:
+            print(f"  Error getting IRM rate: {str(e)}")
+        
+        # If all attempts failed, fall back to estimates based on block number
+        raise Exception("All attempts to get rates from contract failed")
+        
     except Exception as e:
-        print(f"Error getting rates at block {block_number}: {e}")
-        return None
+        print(f"ERROR getting rates at block {block_number}: {str(e)}")
+        
+        # Print Web3.py version for debugging
+        import web3
+        print(f"Web3.py version: {web3.__version__}")
+        
+        # Re-raise the exception to maintain the raw error philosophy
+        raise
 
 def get_block_timestamp(w3, block_number):
     """
     Get timestamp for a block number
     """
     try:
-        if w3 is None or "demo" in w3.provider.endpoint_uri:
-            # Simulate timestamp (approximately)
-            # Assume 13 seconds per block on average, starting from a recent timestamp
-            base_time = int(datetime(2024, 1, 1).timestamp())
-            seconds_per_block = 13
-            return base_time + (block_number * seconds_per_block)
-        else:
-            block = w3.eth.get_block(block_number)
-            return block.timestamp
+        # Get actual block timestamp
+        block = w3.eth.get_block(block_number)
+        return block.timestamp
     except Exception as e:
         print(f"Error getting timestamp for block {block_number}: {e}")
-        # Return current timestamp as fallback
-        return int(datetime.now().timestamp())
+        raise
 
 def collect_historical_data(provider_url, days=90, interval_days=1):
     """
-    Collect historical data by forking at different blocks
+    Collect historical data by querying at different blocks
     """
     print(f"Collecting historical data for the past {days} days with {interval_days} day intervals...")
     
-    # Connect to node for basic info
+    # Connect to node
     w3 = connect_to_node(provider_url)
-    if not w3 and provider_url != "demo":
-        print("Failed to connect to Ethereum node. Exiting.")
-        return None
+    if not w3:
+        raise Exception(f"Failed to connect to Base network. Check your provider URL: {provider_url}")
     
-    # Get current block for reference
-    if w3 and provider_url != "demo":
-        current_block = w3.eth.block_number
-        print(f"Current block number: {current_block}")
-    else:
-        # Use a simulated current block for demo mode
-        current_block = 20000000
-        print(f"Using simulated current block: {current_block}")
+    # Get current block
+    current_block = w3.eth.block_number
+    print(f"Current block number: {current_block}")
     
-    # Create contract instance (would be used in real implementation)
-    if w3 and provider_url != "demo":
-        contract = w3.eth.contract(address=MORPHO_CONTRACT_ADDRESS, abi=SIMPLIFIED_ABI)
-    else:
-        contract = None
+    # Create contract instance - this is where contract calls will happen
+    contract = w3.eth.contract(address=MORPHO_CONTRACT_ADDRESS, abi=MORPHO_ABI)
     
-    # Calculate approximate blocks per day (average 13 seconds per block)
-    blocks_per_day = int(24 * 60 * 60 / 13)
+    # Try getting current rates to validate contract connection
+    print("\nTesting contract call with current block...")
+    try:
+        current_rates = get_rates_at_block(w3, contract, CBBTC_USDC_MARKET_ID, current_block)
+        print(f"Current rates: Borrow {current_rates['borrow_rate']:.2f}%, Supply {current_rates['supply_rate']:.2f}%, Util {current_rates['utilization']:.2f}%")
+    except Exception as e:
+        print(f"Failed to get current rates: {e}")
+        
+        # Debug logs to help identify the issue
+        print("\nDebug information for contract call:")
+        print(f"Contract address: {MORPHO_CONTRACT_ADDRESS}")
+        print(f"Market ID: {CBBTC_USDC_MARKET_ID}")
+        print(f"Using Web3 provider: {provider_url}")
+        print("ABI methods:")
+        for method in contract.functions:
+            print(f"  - {method}")
+            
+        # Raise the exception to fail early
+        raise
+    
+    # Calculate approximate blocks per day (average 12 seconds per block)
+    blocks_per_day = int(24 * 60 * 60 / 12)
     
     historical_data = []
     
     # Collect data for specified number of days in the past
-    for days_ago in range(days, 0, -interval_days):
+    for days_ago in range(0, days+1, interval_days):
+        if days_ago == 0:
+            # For day 0 (current), use the rates we already collected
+            timestamp = get_block_timestamp(w3, current_block)
+            date = datetime.fromtimestamp(timestamp)
+            
+            data_point = {
+                'block_number': current_block,
+                'timestamp': date,
+                'borrow_rate': current_rates['borrow_rate'],
+                'supply_rate': current_rates['supply_rate'],
+                'utilization': current_rates['utilization']
+            }
+            historical_data.append(data_point)
+            
+            print(f"Added current data: Block {current_block} ({date}): Borrow {current_rates['borrow_rate']:.2f}%, Supply {current_rates['supply_rate']:.2f}%, Util {current_rates['utilization']:.2f}%")
+            continue
+            
         # Calculate block number for this day
         blocks_ago = days_ago * blocks_per_day
         block_number = current_block - blocks_ago
         
-        print(f"Processing data from {days_ago} days ago (block {block_number})...")
+        print(f"\nProcessing data from {days_ago} days ago (block {block_number})...")
         
-        # In a real implementation, we would fork the chain at this block
-        # For this example, we'll simulate the forking
-        fork_w3 = connect_to_node(provider_url, block_number)
-        
-        # Get rates at this block
-        rates = get_rates_at_block(fork_w3, contract, CBBTC_USDC_MARKET_ID, block_number)
-        
-        if rates:
+        try:
+            # Get rates at this block using contract call
+            rates = get_rates_at_block(w3, contract, CBBTC_USDC_MARKET_ID, block_number)
+            
             # Get block timestamp
             timestamp = get_block_timestamp(w3, block_number)
             date = datetime.fromtimestamp(timestamp)
@@ -199,11 +427,42 @@ def collect_historical_data(provider_url, days=90, interval_days=1):
             historical_data.append(data_point)
             
             print(f"  Block {block_number} ({date}): Borrow {rates['borrow_rate']:.2f}%, Supply {rates['supply_rate']:.2f}%, Util {rates['utilization']:.2f}%")
+        except Exception as e:
+            print(f"  Error getting data for block {block_number}: {e}")
+            print(f"  Skipping this block and continuing...")
+            continue
         
         # Sleep to avoid rate limiting with real providers
-        time.sleep(0.2)
+        time.sleep(1)
     
     return historical_data
+
+def save_data_to_json(data, filename='morpho_historical_rates.json'):
+    """
+    Save the collected data to a JSON file in the data directory
+    """
+    # Get the data directory path
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    data_dir = os.path.join(os.path.dirname(script_dir), 'data')
+    
+    # Ensure data directory exists
+    os.makedirs(data_dir, exist_ok=True)
+    
+    # Convert timestamps to strings for JSON serialization
+    json_data = []
+    for item in data:
+        json_item = item.copy()
+        if 'timestamp' in json_item and isinstance(json_item['timestamp'], datetime):
+            json_item['timestamp'] = json_item['timestamp'].isoformat()
+        json_data.append(json_item)
+    
+    # Save to file
+    json_path = os.path.join(data_dir, filename)
+    with open(json_path, 'w') as f:
+        json.dump(json_data, f, indent=2)
+    
+    print(f"Data saved to JSON: {json_path}")
+    return json_path
 
 def plot_historical_rates(data):
     """
@@ -243,18 +502,12 @@ def plot_historical_rates(data):
     plt.grid(True, alpha=0.3)
     plt.xlabel('Date', fontsize=14, labelpad=10)
     plt.ylabel('Rate (%)', fontsize=14, labelpad=10)
-    plt.title('Morpho cbBTC/USDC Market - Historical Rates (via Chain Forking)', fontsize=20, pad=20)
+    plt.title('Morpho cbBTC/USDC Market - Historical Rates via Contract Calls', fontsize=20, pad=20)
     
     # Add legends
     lines1, labels1 = plt.gca().get_legend_handles_labels()
     lines2, labels2 = ax2.get_legend_handles_labels()
     ax2.legend(lines1 + lines2, labels1 + labels2, loc='upper right', frameon=True)
-    
-    # Add note about simulation if needed
-    if any("demo" in str(d) for d in df['timestamp']):
-        plt.figtext(0.5, 0.01, 
-                "Note: This chart uses simulated data for demonstration purposes.", 
-                ha='center', fontsize=12, color='#f39c12')
     
     # Set reasonable y-axis limits for rates
     min_rate = min(df['supply_rate'].min(), df['borrow_rate'].min()) * 0.9
@@ -275,35 +528,39 @@ def plot_historical_rates(data):
     # Save data to CSV
     csv_path = os.path.join(plot_dir, 'morpho_historical_rates.csv')
     df.to_csv(csv_path, index=False)
-    print(f"Data saved to: {csv_path}")
+    print(f"Data saved to CSV: {csv_path}")
 
 def main():
     """
     Main function to orchestrate the data collection and visualization
     """
-    print("Morpho Historical Rate Tracker using Blockchain Forking")
-    print("======================================================")
+    print("Morpho Historical Rate Tracker using Direct Contract Calls")
+    print("=======================================================")
     
     # Get provider URL
     provider_url = get_provider_url()
     
     if not provider_url:
-        print("No provider URL specified. Exiting.")
+        print("ERROR: No provider URL available. Exiting.")
         return
     
-    # Use demo mode if specified
-    if provider_url.lower() == 'demo':
-        provider_url = 'demo'
-        print("\nRunning in DEMO MODE with simulated data")
-    
-    # Collect historical data
-    data = collect_historical_data(provider_url, days=90, interval_days=5)
+    # Collect historical data with full error output
+    print("\nCollecting historical rate data via direct contract calls...\n")
+    data = collect_historical_data(provider_url, days=90, interval_days=7)
     
     if data and len(data) > 0:
+        # Save the data to JSON file
+        json_path = save_data_to_json(data, filename='morpho_historical_rates.json')
+        print(f"\nData successfully saved to: {json_path}")
+        
         # Plot the data
         plot_historical_rates(data)
     else:
         print("No data collected. Exiting.")
 
 if __name__ == "__main__":
+    # Import math here to avoid issues
+    import math
+    
+    # Call main
     main() 

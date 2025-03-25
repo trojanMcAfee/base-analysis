@@ -1,3 +1,4 @@
 node_modules
 queries/node_modules
+.env.private
 

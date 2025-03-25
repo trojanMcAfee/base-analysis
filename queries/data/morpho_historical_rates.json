@@ -1,0 +1,37 @@
+[
+  {
+    "block_number": 27381183,
+    "timestamp": "2025-03-09T21:21:53",
+    "borrow_rate": 6.573512391942594,
+    "supply_rate": 5.390769475754339,
+    "utilization": 90.97423832329636
+  },
+  {
+    "block_number": 27417183,
+    "timestamp": "2025-03-10T17:21:53",
+    "borrow_rate": 6.110035291601613,
+    "supply_rate": 5.0985072743448505,
+    "utilization": 86.76155275549311
+  },
+  {
+    "block_number": 27453183,
+    "timestamp": "2025-03-11T13:21:53",
+    "borrow_rate": 5.110262204074515,
+    "supply_rate": 4.517841331668008,
+    "utilization": 80.27009401633174
+  },
+  {
+    "block_number": 27489183,
+    "timestamp": "2025-03-12T09:21:53",
+    "borrow_rate": 5.036844781630989,
+    "supply_rate": 4.397488474206703,
+    "utilization": 80.30744349689297
+  },
+  {
+    "block_number": 27525183,
+    "timestamp": "2025-03-13T05:21:53",
+    "borrow_rate": 5.825267322339347,
+    "supply_rate": 5.0335061565880865,
+    "utilization": 85.58960066689247
+  }
+]
