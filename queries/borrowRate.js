@@ -1,10 +1,22 @@
 import fetch from 'node-fetch';
-import { MORPHO_GRAPHQL_ENDPOINT, GRAPHQL_MARKET_ID } from './state/common.js';
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { BLOCK_NUMBER, CBBTC_USDC_MARKET_ID } from './state/common.js';
+
+// Load environment variables from .env.private
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.resolve(__dirname, '../.env.private') });
+
+// Constants for Base chain subgraph
+const API_KEY = process.env.THE_GRAPH_API_KEY;
+const SUBGRAPH_ID = '71ZTy1veF9twER9CLMnPWeLQ7GZcwKsjmygejrgKirqs';
+const BASE_SUBGRAPH_ENDPOINT = `https://gateway.thegraph.com/api/${API_KEY}/subgraphs/id/${SUBGRAPH_ID}`;
 
 // Function to make a direct GraphQL request
 async function makeGraphQLRequest(query, variables = {}) {
   try {
-    const response = await fetch(MORPHO_GRAPHQL_ENDPOINT, {
+    const response = await fetch(BASE_SUBGRAPH_ENDPOINT, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -30,15 +42,19 @@ async function makeGraphQLRequest(query, variables = {}) {
   }
 }
 
-// Function to fetch a market's borrowing rate by ID
-async function fetchBorrowingRate(marketId) {
+// Function to fetch a market's borrowing rate by ID at a specific block
+async function fetchBorrowingRate(marketId, blockNumber) {
+  // Add block parameter if blockNumber is provided
+  const blockParam = blockNumber ? `, block: { number: ${blockNumber} }` : '';
+  
   const query = `
     {
-      market(id: "${marketId}") {
+      market(id: "${marketId}"${blockParam}) {
         id
-        state {
-          borrowApy
-          timestamp
+        rates {
+          rate
+          side
+          type
         }
       }
     }
@@ -50,20 +66,34 @@ async function fetchBorrowingRate(marketId) {
 // Main function to orchestrate the query
 async function main() {
   try {
-    // Fetch the borrowing rate for the market
-    const marketData = await fetchBorrowingRate(GRAPHQL_MARKET_ID);
+    // Using BLOCK_NUMBER from common.js
+    console.log(`Fetching borrowing rate for cbBTC/USDC market at block ${BLOCK_NUMBER}...`);
     
-    if (marketData.market && marketData.market.state) {
-      const state = marketData.market.state;
+    // Fetch the borrowing rate for the market
+    const marketData = await fetchBorrowingRate(CBBTC_USDC_MARKET_ID, BLOCK_NUMBER);
+    
+    if (marketData.market && marketData.market.rates) {
+      // Look for the borrow rate (side: BORROWER, type: VARIABLE)
+      const borrowRate = marketData.market.rates.find(
+        rate => rate.side === 'BORROWER' && rate.type === 'VARIABLE'
+      );
       
-      // The borrowApy is in decimal form (e.g., 0.05 for 5%)
-      // Multiply by 100 to get the percentage value
-      const borrowApyPercentage = state.borrowApy * 100;
-      
-      // Output only the final borrowing rate as a percentage
-      console.log(`${borrowApyPercentage.toFixed(2)}%`);
+      if (borrowRate) {
+        // The rate is in decimal form (e.g., 0.05 for 5%)
+        // Multiply by 100 to get the percentage value
+        const borrowRatePercentage = parseFloat(borrowRate.rate) * 100;
+        
+        // Output only the final borrowing rate as a percentage
+        console.log(`${borrowRatePercentage.toFixed(2)}%`);
+      } else {
+        console.log('No borrowing rate data found for the provided market ID');
+      }
     } else {
-      console.log('No borrowing rate data found for the provided market ID');
+      console.log('No market data found for the provided market ID');
+      console.log('This could be because:');
+      console.log('1. The market did not exist at the specified block');
+      console.log('2. The subgraph has not indexed data for the specified block');
+      console.log('3. The market ID is incorrect');
     }
 
   } catch (error) {
