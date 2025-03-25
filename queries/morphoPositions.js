@@ -1,13 +1,24 @@
 import fetch from 'node-fetch';
 import fs from 'fs';
 import path from 'path';
-import { MORPHO_GRAPHQL_ENDPOINT, GRAPHQL_MARKET_ID, parseLLTVToDecimal } from './state/common.js';
-import { fetchMarketById } from './supplyBorrowLiq.js';
+import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+import { 
+  CBBTC_USDC_MARKET_ID, 
+  BLOCK_NUMBER, 
+  parseLLTVToDecimal, 
+  getBaseSubgraphEndpoint 
+} from './state/common.js';
+import { fetchBTCPrice } from './btcPrice.js';
 
-// Function to make a direct GraphQL request
+// Load environment variables from .env.private
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.resolve(__dirname, '../.env.private') });
+
+// Function to make a direct GraphQL request to the Base subgraph
 async function makeGraphQLRequest(query, variables = {}) {
   try {
-    const response = await fetch(MORPHO_GRAPHQL_ENDPOINT, {
+    const response = await fetch(getBaseSubgraphEndpoint(), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -22,18 +33,6 @@ async function makeGraphQLRequest(query, variables = {}) {
     const jsonResponse = await response.json();
     
     if (jsonResponse.errors) {
-      // Check if this is the "No results matching given parameters" error
-      const noResultsError = jsonResponse.errors.some(error => 
-        error.message && error.message.includes("No results matching given parameters")
-      );
-      
-      if (noResultsError) {
-        // This is not a fatal error, just means we've reached the end of available positions
-        console.log("Reached the end of available positions.");
-        return { marketPositions: { items: [] } }; // Return empty results
-      }
-      
-      // For other errors, log and throw as before
       console.error('GraphQL Errors:', jsonResponse.errors);
       throw new Error('GraphQL request failed');
     }
@@ -45,43 +44,65 @@ async function makeGraphQLRequest(query, variables = {}) {
   }
 }
 
-// Function to fetch positions for a specific market with pagination
-async function fetchCbBtcUsdcPositions(skip, batchSize) {
-  // The query using the correct fields and filtering for the cbBTC/USDC market
+// Function to fetch market data to get LLTV value
+async function fetchMarketData() {
   const query = `
     {
-      marketPositions(
-        first: ${batchSize}
+      markets(
+        where: { id: "${CBBTC_USDC_MARKET_ID}" }
+        block: { number: ${BLOCK_NUMBER} }
+      ) {
+        id
+        name
+        liquidationThreshold
+        maximumLTV
+        totalBorrow
+        totalCollateral
+        totalValueLockedUSD
+        borrowedToken {
+          symbol
+          decimals
+        }
+        inputToken {
+          symbol
+          decimals
+        }
+      }
+    }
+  `;
+  
+  return await makeGraphQLRequest(query);
+}
+
+// Function to fetch all positions for the CBBTC/USDC market at a specific block
+async function fetchAllPositionsAtBlock(first = 100, skip = 0) {
+  const query = `
+    {
+      positions(
+        first: ${first}
         skip: ${skip}
+        block: { number: ${BLOCK_NUMBER} }
         where: {
-          borrowShares_gte: "1",
-          chainId_in: [8453],
-          marketId_in: ["${GRAPHQL_MARKET_ID}"]
+          market: "${CBBTC_USDC_MARKET_ID}",
+          hashClosed: null
         }
       ) {
-        items {
+        id
+        account {
           id
-          user {
-            address
-          }
-          market {
-            id
-            loanAsset {
-              symbol
-              decimals
-            }
-            collateralAsset {
-              symbol
-              decimals
-            }
-          }
-          state {
-            collateral
-            collateralUsd
-            borrowAssets
-            borrowAssetsUsd
-            timestamp
-          }
+        }
+        market {
+          id
+          name
+        }
+        side
+        isCollateral
+        balance
+        shares
+        asset {
+          id
+          symbol
+          decimals
         }
       }
     }
@@ -93,15 +114,7 @@ async function fetchCbBtcUsdcPositions(skip, batchSize) {
 // Main function to orchestrate the query
 async function main() {
   try {
-    console.log(`Fetching all positions for cbBTC/USDC market (ID: ${GRAPHQL_MARKET_ID}) on Base...`);
-    
-    // Parameters for pagination
-    const batchSize = 100;
-    let skip = 0;
-    let hasMore = true;
-    let allPositions = [];
-    let positionCount = 0;
-    let failureCount = 0; // Track consecutive failures
+    console.log(`Fetching all positions for cbBTC/USDC market (ID: ${CBBTC_USDC_MARKET_ID}) at block ${BLOCK_NUMBER}...`);
     
     // Create data directory if it doesn't exist
     const dataDir = path.join(process.cwd(), 'data');
@@ -109,121 +122,133 @@ async function main() {
       fs.mkdirSync(dataDir, { recursive: true });
     }
     
-    // Fetch market data first to get the LLTV value (needed for all liquidation price calculations)
-    console.log('Fetching market data for LLTV...');
-    const marketData = await fetchMarketById(GRAPHQL_MARKET_ID);
-    if (!marketData.market || !marketData.market.lltv) {
-      console.error('Failed to fetch market LLTV. Using default value of 85%');
-      var lltvDecimal = 0.85;
-    } else {
-      var lltvDecimal = parseLLTVToDecimal(marketData.market.lltv);
-      console.log(`Market LLTV: ${(lltvDecimal * 100).toFixed(2)}%`);
+    // Fetch current BTC price using the imported function
+    console.log('Fetching current BTC price...');
+    const btcPriceData = await fetchBTCPrice();
+    const collateralPriceUSD = btcPriceData.price;
+    
+    // Fetch market data first to get the LLTV and other market details
+    console.log('Fetching market data...');
+    const marketData = await fetchMarketData();
+    
+    if (!marketData.markets || marketData.markets.length === 0) {
+      console.error('Market not found.');
+      return;
     }
     
-    console.log('Starting to fetch all positions in batches...');
-
-    // Fetch all positions using pagination
-    while (hasMore) {
-      console.log(`Fetching batch: positions ${skip} to ${skip + batchSize - 1}...`);
+    const market = marketData.markets[0];
+    console.log(`Market: ${market.name}`);
+    
+    // Parse LLTV directly from the market data
+    let lltvDecimal = parseFloat(market.liquidationThreshold);
+    console.log(`Raw Liquidation Threshold value: ${market.liquidationThreshold}`);
+    console.log(`Market Liquidation Threshold: ${(lltvDecimal * 100).toFixed(2)}%`);
+    
+    // Parse token decimal factors
+    const borrowDecimalFactor = 10 ** (market.borrowedToken?.decimals || 6); // Default to 6 for USDC
+    const collateralDecimalFactor = 10 ** (market.inputToken?.decimals || 8); // Default to 8 for BTC
+    
+    console.log(`${market.inputToken.symbol} Price: $${collateralPriceUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
+    
+    // Fetch all positions with pagination
+    console.log(`Fetching all open positions...`);
+    let allPositions = [];
+    let hasMorePositions = true;
+    let skip = 0;
+    const batchSize = 100;
+    
+    while (hasMorePositions) {
+      console.log(`Fetching positions ${skip} to ${skip + batchSize - 1}...`);
+      const positionsData = await fetchAllPositionsAtBlock(batchSize, skip);
       
-      try {
-        const positionsData = await fetchCbBtcUsdcPositions(skip, batchSize);
+      if (!positionsData.positions || positionsData.positions.length === 0) {
+        console.log('No more positions to fetch.');
+        hasMorePositions = false;
+        break;
+      }
+      
+      // Process positions in this batch
+      allPositions = [...allPositions, ...positionsData.positions];
+      
+      // If we got fewer positions than requested, we've reached the end
+      if (positionsData.positions.length < batchSize) {
+        hasMorePositions = false;
+      } else {
+        // Prepare for next batch
+        skip += batchSize;
         
-        if (positionsData.marketPositions && positionsData.marketPositions.items) {
-          const positions = positionsData.marketPositions.items;
-          
-          if (positions.length === 0) {
-            hasMore = false;
-            console.log('No more positions to fetch.');
-            break;
-          }
-          
-          // Process each position in this batch
-          const formattedPositions = positions.map(position => {
-            positionCount++;
-            
-            const userAddress = position.user.address;
-            
-            // Format values
-            const state = position.state;
-            const borrowDecimalFactor = 10 ** position.market.loanAsset.decimals;
-            const collateralDecimalFactor = 10 ** position.market.collateralAsset.decimals;
-            
-            // Parse values with validation
-            const collateralAmount = state.collateral ? parseFloat(state.collateral) / collateralDecimalFactor : 0;
-            const borrowAmount = state.borrowAssets ? parseFloat(state.borrowAssets) / borrowDecimalFactor : 0;
-            
-            // For USDC, the asset value is equal to the USD value (1:1)
-            // Use borrowAssets directly as USD value since borrowAssetsUsd is null
-            const borrowUsd = state.borrowAssets ? parseFloat(state.borrowAssets) / borrowDecimalFactor : 0;
-            const collateralUsd = state.collateralUsd ? parseFloat(state.collateralUsd) : 0;
-            
-            // Calculate liquidation price using the formula from liqPrice.js:
-            // Liquidation price = borrowed_assets / (collateral_units * lltv_decimals)
-            let liquidationPrice = 0;
-            if (collateralAmount > 0 && borrowUsd > 0) {
-              liquidationPrice = borrowUsd / (collateralAmount * lltvDecimal);
-            }
-            
-            return {
-              position: positionCount,
-              userAddress: userAddress,
-              collateral: {
-                cbBTC: collateralAmount,
-                USD: collateralUsd
-              },
-              borrowed: {
-                USDC: borrowAmount,
-                USD: borrowUsd
-              },
-              liquidationPrice: liquidationPrice
-            };
-          });
-          
-          // Add the processed positions to our collection
-          allPositions = [...allPositions, ...formattedPositions];
-          
-          // Reset failure count on success
-          failureCount = 0;
-          
-          // If we got less than requested, we've reached the end
-          if (positions.length < batchSize) {
-            hasMore = false;
-            console.log('Received less positions than requested. Reached the end.');
-          } else {
-            // Prepare for the next batch
-            skip += batchSize;
-            
-            // Add a small delay to avoid rate limiting
-            await new Promise(resolve => setTimeout(resolve, 500));
-          }
-        } else {
-          console.log('No positions found in this batch. Stopping.');
-          hasMore = false;
-        }
-      } catch (error) {
-        console.error(`Error fetching batch starting at position ${skip}:`, error.message);
-        failureCount++;
-        
-        // If we've had too many failures in a row, stop trying
-        if (failureCount >= 3) {
-          console.error('Too many consecutive failures. Stopping pagination.');
-          hasMore = false;
-        } else {
-          // Add a longer delay before retrying
-          console.log(`Retrying after a delay... (Attempt ${failureCount})`);
-          await new Promise(resolve => setTimeout(resolve, 2000));
-        }
+        // Add a small delay to avoid hitting rate limits
+        await new Promise(resolve => setTimeout(resolve, 500));
       }
     }
     
     console.log(`\nFetched a total of ${allPositions.length} positions.`);
     
-    // Prepare summary data
+    // Group positions by account
+    const positionsByAccount = {};
+    
+    allPositions.forEach(position => {
+      const accountId = position.account.id;
+      if (!positionsByAccount[accountId]) {
+        positionsByAccount[accountId] = {
+          borrowerPosition: null,
+          collateralPosition: null
+        };
+      }
+      
+      if (position.side === "BORROWER") {
+        positionsByAccount[accountId].borrowerPosition = position;
+      } else if (position.isCollateral) {
+        positionsByAccount[accountId].collateralPosition = position;
+      }
+    });
+    
+    // Filter accounts with both borrower and collateral positions
+    const accountsWithBothPositions = Object.entries(positionsByAccount)
+      .filter(([_, positions]) => positions.borrowerPosition && positions.collateralPosition);
+    
+    console.log(`\nFound ${accountsWithBothPositions.length} accounts with both borrower and collateral positions.`);
+    
+    // Format positions for output
+    const formattedPositions = accountsWithBothPositions.map(([accountId, positions], index) => {
+      // Format borrower position
+      const borrowerPosition = positions.borrowerPosition;
+      const borrowAmount = borrowerPosition.balance ? parseFloat(borrowerPosition.balance) / borrowDecimalFactor : 0;
+      
+      // Format collateral position
+      const collateralPosition = positions.collateralPosition;
+      const collateralAmount = collateralPosition.balance ? parseFloat(collateralPosition.balance) / collateralDecimalFactor : 0;
+      
+      // Calculate USD values
+      const collateralUSD = collateralAmount * collateralPriceUSD;
+      const borrowedUSD = borrowAmount; // For USDC, 1:1 with USD
+      
+      // Calculate liquidation price
+      let liquidationPrice = 0;
+      if (collateralAmount > 0 && borrowAmount > 0) {
+        liquidationPrice = borrowAmount / (collateralAmount * lltvDecimal);
+      }
+      
+      return {
+        position: index + 1,
+        userAddress: accountId,
+        collateral: {
+          cbBTC: collateralAmount,
+          USD: collateralUSD
+        },
+        borrowed: {
+          USDC: borrowAmount,
+          USD: borrowedUSD
+        },
+        liquidationPrice: liquidationPrice
+      };
+    });
+    
+    // Calculate summary data
     const summary = {
-      totalPositions: allPositions.length,
-      totalBorrowedUsd: allPositions.reduce((total, pos) => total + pos.borrowed.USD, 0),
-      totalCollateralUsd: allPositions.reduce((total, pos) => total + pos.collateral.USD, 0),
+      totalPositions: formattedPositions.length,
+      totalBorrowedUsd: formattedPositions.reduce((total, pos) => total + pos.borrowed.USD, 0),
+      totalCollateralUsd: formattedPositions.reduce((total, pos) => total + pos.collateral.USD, 0),
     };
     
     // Add average LTV if we have valid values
@@ -232,7 +257,7 @@ async function main() {
     }
     
     // Calculate average liquidation price on positions that have a non-zero value
-    const validLiqPrices = allPositions.filter(pos => pos.liquidationPrice > 0);
+    const validLiqPrices = formattedPositions.filter(pos => pos.liquidationPrice > 0 && pos.liquidationPrice < 1000000);
     if (validLiqPrices.length > 0) {
       const avgLiqPrice = validLiqPrices.reduce((total, pos) => total + pos.liquidationPrice, 0) / validLiqPrices.length;
       summary.averageLiquidationPrice = avgLiqPrice;
@@ -241,15 +266,11 @@ async function main() {
     // Create the final data object
     const outputData = {
       summary: summary,
-      positions: allPositions
+      positions: formattedPositions
     };
     
-    // Save to JSON file
-    const outputFilePath = path.join('data', 'morpho_positions_all.json');
-    fs.writeFileSync(outputFilePath, JSON.stringify(outputData, null, 2));
-    
-    console.log(`Data successfully saved to ${outputFilePath}.`);
-    console.log('\n======= SUMMARY =======');
+    // Display some statistics
+    console.log(`\n======= SUMMARY =======`);
     console.log(`Total Positions: ${summary.totalPositions}`);
     console.log(`Total Borrowed: $${summary.totalBorrowedUsd.toFixed(2)}`);
     console.log(`Total Collateral: $${summary.totalCollateralUsd.toFixed(2)}`);
@@ -261,6 +282,27 @@ async function main() {
     if (summary.averageLiquidationPrice) {
       console.log(`Average Liquidation Price: $${summary.averageLiquidationPrice.toFixed(2)}`);
     }
+    
+    // Display the first 10 positions in detail (to avoid console overflow)
+    console.log(`\n===== First Few Positions =====`);
+    const displayCount = Math.min(10, formattedPositions.length);
+    formattedPositions.slice(0, displayCount).forEach((pos, index) => {
+      console.log(`\nPosition ${index + 1}:`);
+      console.log(`  User: ${pos.userAddress}`);
+      console.log(`  Collateral: ${pos.collateral.cbBTC.toFixed(8)} ${market.inputToken.symbol} ($${pos.collateral.USD.toFixed(2)})`);
+      console.log(`  Borrowed: ${pos.borrowed.USDC.toFixed(2)} ${market.borrowedToken.symbol} ($${pos.borrowed.USD.toFixed(2)})`);
+      console.log(`  Liquidation Price: $${pos.liquidationPrice.toFixed(2)}`);
+    });
+    
+    if (formattedPositions.length > displayCount) {
+      console.log(`\n... and ${formattedPositions.length - displayCount} more positions`);
+    }
+    
+    // Save to JSON file
+    const outputFilePath = path.join('data', `morpho_positions_block_${BLOCK_NUMBER}.json`);
+    fs.writeFileSync(outputFilePath, JSON.stringify(outputData, null, 2));
+    
+    console.log(`\nData successfully saved to ${outputFilePath}.`);
 
   } catch (error) {
     console.error('Error in fetching data:', error);
