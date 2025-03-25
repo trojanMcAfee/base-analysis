@@ -2,19 +2,16 @@ import fetch from 'node-fetch';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { SUBGRAPH_ID, getBaseSubgraphEndpoint } from '../state/common.js';
 
 // Load environment variables from .env.private
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-dotenv.config({ path: path.resolve(__dirname, '../.env.private') });
-
-const API_KEY = process.env.THE_GRAPH_API_KEY;
-const SUBGRAPH_ID = '71ZTy1veF9twER9CLMnPWeLQ7GZcwKsjmygejrgKirqs';
-const SUBGRAPH_ENDPOINT = `https://gateway.thegraph.com/api/${API_KEY}/subgraphs/id/${SUBGRAPH_ID}`;
+dotenv.config({ path: path.resolve(__dirname, '../../.env.private') });
 
 // Function to make a direct GraphQL request
 async function makeGraphQLRequest(query, variables = {}) {
   try {
-    const response = await fetch(SUBGRAPH_ENDPOINT, {
+    const response = await fetch(getBaseSubgraphEndpoint(), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
