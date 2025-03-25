@@ -139,14 +139,10 @@ async function main() {
     const market = marketData.markets[0];
     console.log(`Market: ${market.name}`);
     
-    // Parse LLTV (use a fixed value if not available or is zero)
-    let lltvDecimal = parseLLTVToDecimal(market.liquidationThreshold);
-    if (lltvDecimal === 0 || isNaN(lltvDecimal)) {
-      lltvDecimal = 0.85; // Use a typical Morpho LLTV as fallback (85%)
-      console.log(`Using default Liquidation Threshold: ${(lltvDecimal * 100).toFixed(2)}% since market value was 0`);
-    } else {
-      console.log(`Market Liquidation Threshold: ${(lltvDecimal * 100).toFixed(2)}%`);
-    }
+    // Parse LLTV directly from the market data
+    let lltvDecimal = parseFloat(market.liquidationThreshold);
+    console.log(`Raw Liquidation Threshold value: ${market.liquidationThreshold}`);
+    console.log(`Market Liquidation Threshold: ${(lltvDecimal * 100).toFixed(2)}%`);
     
     // Parse token decimal factors
     const borrowDecimalFactor = 10 ** (market.borrowedToken?.decimals || 6); // Default to 6 for USDC
@@ -227,20 +223,10 @@ async function main() {
       const collateralUSD = collateralAmount * collateralPriceUSD;
       const borrowedUSD = borrowAmount; // For USDC, 1:1 with USD
       
-      // Calculate liquidation price with safety checks
+      // Calculate liquidation price
       let liquidationPrice = 0;
-      if (collateralAmount > 0 && borrowAmount > 0 && lltvDecimal > 0) {
+      if (collateralAmount > 0 && borrowAmount > 0) {
         liquidationPrice = borrowAmount / (collateralAmount * lltvDecimal);
-        
-        // Sanity check for liquidation price
-        if (liquidationPrice > 1000000) {
-          liquidationPrice = borrowAmount / (collateralAmount * 0.85); // Try with default 85% LLTV
-          
-          // If still too high, cap it
-          if (liquidationPrice > 1000000) {
-            liquidationPrice = Math.min(liquidationPrice, 100000); // Cap at $100k
-          }
-        }
       }
       
       return {
