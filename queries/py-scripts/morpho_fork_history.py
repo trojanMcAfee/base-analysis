@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from datetime import datetime, timedelta
 from web3 import Web3
-from web3.middleware import geth_poa_middleware
+from web3.middleware import ExtraDataToPOAMiddleware
 from hexbytes import HexBytes
 
 # Constants for Morpho on Base network
@@ -151,7 +151,7 @@ def connect_to_node(provider_url):
         w3 = Web3(Web3.HTTPProvider(provider_url))
         
         # Add middleware for Base (which is a PoA chain)
-        w3.middleware_onion.inject(geth_poa_middleware, layer=0)
+        w3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
         
         # Check connection
         if w3.is_connected():
