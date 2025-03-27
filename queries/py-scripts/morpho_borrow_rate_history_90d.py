@@ -151,29 +151,38 @@ def main():
         
         data = fetch_borrowing_rate(CBBTC_USDC_MARKET_ID, block_number)
         
-        if data and data.get('market') and data['market'].get('rates'):
-            # Look for the borrow rate (side: BORROWER, type: VARIABLE)
-            borrow_rate = next(
-                (rate for rate in data['market']['rates'] 
-                 if rate['side'] == 'BORROWER' and rate['type'] == 'VARIABLE'),
-                None
-            )
+        if data is None:
+            print(f"Failed to query data for block {block_number}")
+            continue
             
-            if borrow_rate:
-                # Convert to percentage
-                borrow_rate_percentage = float(borrow_rate['rate']) * 100
-                print(f"Borrow rate: {borrow_rate_percentage:.2f}%")
-                
-                results.append({
-                    'block_number': block_number,
-                    'date': date,
-                    'days_ago': DAYS_TO_LOOK_BACK - days_ago,  # Invert for plotting
-                    'borrow_rate': borrow_rate_percentage
-                })
-            else:
-                print(f"No borrowing rate found for block {block_number}")
+        if not data.get('market'):
+            print(f"Market did not exist at block {block_number} (possibly before market creation)")
+            continue
+            
+        if not data['market'].get('rates'):
+            print(f"No rates found for market at block {block_number}")
+            continue
+        
+        # Look for the borrow rate (side: BORROWER, type: VARIABLE)
+        borrow_rate = next(
+            (rate for rate in data['market']['rates'] 
+             if rate['side'] == 'BORROWER' and rate['type'] == 'VARIABLE'),
+            None
+        )
+        
+        if borrow_rate:
+            # Convert to percentage
+            borrow_rate_percentage = float(borrow_rate['rate']) * 100
+            print(f"Borrow rate: {borrow_rate_percentage:.2f}%")
+            
+            results.append({
+                'block_number': block_number,
+                'date': date,
+                'days_ago': DAYS_TO_LOOK_BACK - days_ago,  # Invert for plotting
+                'borrow_rate': borrow_rate_percentage
+            })
         else:
-            print(f"No market data found for block {block_number}")
+            print(f"No borrowing rate found for block {block_number}")
     
     # Create DataFrame from results
     if not results:
@@ -185,11 +194,20 @@ def main():
     # Convert date to datetime for better plotting
     df['date'] = pd.to_datetime(df['date'])
     
+    # Set output directory
+    output_dir = root_dir / 'plots' / 'png'
+    output_dir.mkdir(exist_ok=True, parents=True)
+    
+    # Save to CSV
+    csv_path = output_dir / 'morpho_borrow_rate_history_90d.csv'
+    df.to_csv(csv_path, index=False)
+    print(f"Data saved to {csv_path}")
+    
     # Plot results
     print("Generating plot...")
-    plot_borrow_rate_history(df)
+    plot_borrow_rate_history(df, output_dir)
     
-def plot_borrow_rate_history(df):
+def plot_borrow_rate_history(df, output_dir):
     # Set style
     sns.set_style('whitegrid')
     plt.figure(figsize=(12, 6))
@@ -222,8 +240,6 @@ def plot_borrow_rate_history(df):
     plt.tight_layout()
     
     # Save the plot
-    output_dir = root_dir / 'plots'
-    output_dir.mkdir(exist_ok=True)
     output_path = output_dir / 'morpho_borrow_rate_history_90d.png'
     plt.savefig(output_path)
     print(f"Plot saved to {output_path}")

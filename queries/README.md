@@ -214,6 +214,37 @@ python3 btc_liquidation_heatmap.py
 ### Generated Files
 The script creates `btc_liquidation_heatmap.png`, which is saved in the `plots/png` directory. This visualization shows the distribution of liquidation prices across all positions in the market, with the current BTC price indicated as a red vertical line for reference. It provides a clear visual representation of where liquidation risk is concentrated in the market.
 
+## py-scripts/morpho_borrow_rate_history_90d.py
+
+This Python script fetches and visualizes the Morpho borrowing rate history over the past 90 days at 7-day intervals.
+
+### Key Features
+- Queries the cbBTC/USDC market on Base at multiple historical blocks
+- Calculates block numbers for each 7-day interval going back 90 days
+- Fetches borrowing rates using Morpho's GraphQL API via The Graph
+- Creates a time series visualization of borrowing rate changes
+- Saves both raw data (CSV) and visualization (PNG) for analysis
+
+### Usage
+
+```bash
+cd queries/py-scripts
+python3 morpho_borrow_rate_history_90d.py
+```
+
+### Output
+- Generates a line chart visualization saved to `plots/png/morpho_borrow_rate_history_90d.png`
+- Saves the raw data to `plots/png/morpho_borrow_rate_history_90d.csv`
+- Displays the trending borrowing rate over the specified time period
+- Highlights the most recent borrowing rate with an annotation
+
+### Dependencies
+- pandas: For data manipulation
+- matplotlib: For plotting the time series
+- seaborn: For enhanced visualizations
+- requests: For API calls to The Graph
+- python-dotenv: For loading API keys from environment variables
+
 ## btcPrice.js
 
 This script fetches the current Bitcoin price from the Chainlink oracle on Base.
