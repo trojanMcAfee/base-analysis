@@ -60,6 +60,24 @@ This script identifies the top 3 vault suppliers of USDC in the cbBTC/USDC marke
 node topSuppliers.js
 ```
 
+## topSupplier.js
+
+This script identifies the single largest supplier in the cbBTC/USDC market on Base by analyzing deposit and withdrawal history.
+
+### Key Features
+- Analyzes both deposit and withdrawal events to calculate net balances
+- Fetches the total market supply to provide context for the top supplier's share
+- Calculates the estimated net balance of each supplier after accounting for withdrawals
+- Identifies the account with the highest net balance
+- Shows the top supplier's address, balance, and percentage of total market supply
+- Displays when the supplier's last activity occurred
+
+### Usage
+
+```bash
+node topSupplier.js
+```
+
 ## borrowRate.js
 
 This script fetches the current borrowing rate for the cbBTC/USDC market from Morpho's GraphQL API.
