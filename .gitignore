@@ -2,3 +2,23 @@ node_modules
 queries/node_modules
 .env.private
 
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv/
+# Specific virtual environment path from the commit
+/env/
+/env/bin/
+/env/lib/
+*.egg-info/
+dist/
+build/
+eggs/
+.pytest_cache/
+
