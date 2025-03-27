@@ -1,10 +1,32 @@
 import fetch from 'node-fetch';
-import { MORPHO_GRAPHQL_ENDPOINT, GRAPHQL_MARKET_ID } from './state/common.js';
+import { CBBTC_USDC_MARKET_ID, getBaseSubgraphEndpoint } from './state/common.js';
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-// Function to make a direct GraphQL request
+// Load environment variables from .env.private
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.resolve(__dirname, '../.env.private') });
+
+// Function to make a GraphQL request to The Graph endpoint
 async function makeGraphQLRequest(query, variables = {}) {
   try {
-    const response = await fetch(MORPHO_GRAPHQL_ENDPOINT, {
+    // Ensure we have the API key
+    const apiKey = process.env.THE_GRAPH_API_KEY;
+    if (!apiKey) {
+      throw new Error('THE_GRAPH_API_KEY is not defined in environment variables');
+    }
+
+    // Get the subgraph endpoint with the API key
+    const endpoint = getBaseSubgraphEndpoint();
+    
+    // Only log the endpoint on the first request
+    if (!makeGraphQLRequest.hasRun) {
+      console.log(`Using endpoint: ${endpoint}`);
+      makeGraphQLRequest.hasRun = true;
+    }
+
+    const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -30,33 +52,28 @@ async function makeGraphQLRequest(query, variables = {}) {
   }
 }
 
-// Function to fetch a specific market by ID
+// Initialize the flag
+makeGraphQLRequest.hasRun = false;
+
+// Function to fetch market data by ID
 async function fetchMarketById(marketId) {
   const query = `
     {
       market(id: "${marketId}") {
         id
-        uniqueKey
-        loanAsset {
-          symbol
-          address
-          decimals
-        }
-        collateralAsset {
-          symbol
-          address
-          decimals
-        }
         lltv
-        state {
-          supplyAssets
-          borrowAssets
-          borrowShares
-          liquidityAssets
-          collateralAssets
-          utilization
-          timestamp
+        inputToken {
+          symbol
+          decimals
         }
+        borrowedToken {
+          symbol
+          decimals
+        }
+        totalSupply
+        totalBorrow
+        liquidityAssets: inputTokenBalance
+        totalCollateral
       }
     }
   `;
@@ -64,11 +81,20 @@ async function fetchMarketById(marketId) {
   return await makeGraphQLRequest(query);
 }
 
-// Function to format LLTV as percentage (divide by 1e18 and multiply by 100)
+// Calculate utilization rate
+function calculateUtilization(totalBorrow, totalSupply) {
+  if (!totalBorrow || !totalSupply || totalSupply === '0') {
+    return 0;
+  }
+  
+  return parseFloat(totalBorrow) / parseFloat(totalSupply);
+}
+
+// Function to format LLTV as percentage
 const formatLLTV = (value) => {
   if (!value) return 'N/A';
   try {
-    // Convert from 18-decimal fixed point to percentage
+    // Convert from raw bigint value to percentage (assuming 18 decimals like in Morpho)
     const numValue = (parseFloat(value) / 1e18) * 100;
     return numValue.toFixed(2) + '%';
   } catch (e) {
@@ -79,7 +105,7 @@ const formatLLTV = (value) => {
 // Function to get LLTV value as a number
 async function getLLTV() {
   try {
-    const marketData = await fetchMarketById(GRAPHQL_MARKET_ID);
+    const marketData = await fetchMarketById(CBBTC_USDC_MARKET_ID);
     
     if (marketData.market && marketData.market.lltv) {
       // Check if the value is a string and not empty
@@ -111,10 +137,12 @@ async function getLLTV() {
 // Main function to orchestrate all queries
 async function main() {
   try {
-    // Fetch the specific market by ID
-    const marketData = await fetchMarketById(GRAPHQL_MARKET_ID);
+    console.log('API Key:', process.env.THE_GRAPH_API_KEY ? 'Found' : 'Not found');
     
-    if (marketData.market && marketData.market.state) {
+    // Fetch the specific market by ID
+    const marketData = await fetchMarketById(CBBTC_USDC_MARKET_ID);
+    
+    if (marketData.market) {
       const market = marketData.market;
       const formatValue = (value, decimals) => {
         if (!value) return 'N/A';
@@ -123,18 +151,18 @@ async function main() {
         return numValue.toLocaleString();
       };
       
-      const loanDecimals = market.loanAsset?.decimals || 0;
+      const loanDecimals = market.borrowedToken?.decimals || 0;
+      const utilization = calculateUtilization(market.totalBorrow, market.totalSupply);
       
-      console.log('\ncbBTC/USDC Market Status:');
-      console.log('------------------------');
+      console.log('\ncbBTC/USDC Market Status from The Graph:');
+      console.log('------------------------------------------');
       console.log(`Market ID: ${market.id}`);
-      console.log(`Total Supply: ${formatValue(market.state.supplyAssets, loanDecimals)} USDC`);
-      console.log(`Total Borrow: ${formatValue(market.state.borrowAssets, loanDecimals)} USDC`);
-      console.log(`Available Liquidity: ${formatValue(market.state.liquidityAssets, loanDecimals)} USDC`);
-      console.log(`Utilization Rate: ${market.state.utilization ? (parseFloat(market.state.utilization) * 100).toFixed(2) + '%' : 'N/A'}`);
+      console.log(`Total Supply: ${formatValue(market.totalSupply, loanDecimals)} ${market.borrowedToken?.symbol || 'USDC'}`);
+      console.log(`Total Borrow: ${formatValue(market.totalBorrow, loanDecimals)} ${market.borrowedToken?.symbol || 'USDC'}`);
+      console.log(`Available Liquidity: ${formatValue(market.liquidityAssets, loanDecimals)} ${market.borrowedToken?.symbol || 'USDC'}`);
+      console.log(`Utilization Rate: ${(utilization * 100).toFixed(2)}%`);
       console.log(`Liquidation LTV: ${formatLLTV(market.lltv)}`);
-      console.log(`Last Updated: ${market.state.timestamp ? new Date(parseInt(market.state.timestamp) * 1000).toISOString() : 'N/A'}`);
-      console.log(`Total Borrow Shares: ${market.state.borrowShares}`);
+      console.log(`Total Collateral: ${formatValue(market.totalCollateral, market.inputToken?.decimals || 8)} ${market.inputToken?.symbol || 'cbBTC'}`);
     } else {
       console.log('\nNo market found with the provided ID');
     }
@@ -151,4 +179,4 @@ export { fetchMarketById, main, formatLLTV, getLLTV };
 // Execute the main function if this file is run directly
 if (import.meta.url === `file://${process.argv[1]}`) {
   main();
-}
+} 
