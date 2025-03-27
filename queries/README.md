@@ -92,6 +92,23 @@ This script calculates the Loan-to-Value (LTV) ratio for a specific user's posit
 node calculateLTV.js
 ```
 
+## calculateRequiredCollateral.js
+
+This script calculates the required collateral amount for a given BORROWED_AMOUNT and target LTV.
+
+### Key Features
+- Connects to the Chainlink oracle on Base to fetch the BTC/USD price
+- Calculates the required collateral value in USD using the formula: `REQUIRED_COLLATERAL_VALUE_USD = BORROWED_AMOUNT / (TARGET_LTV / 100)`
+- Converts the required USD value to cbBTC using the formula: `REQUIRED_COLLATERAL_AMOUNT = REQUIRED_COLLATERAL_VALUE_USD / BTC_PRICE`
+- Runs examples with different LTV scenarios (40% and 71.76%)
+- Displays detailed calculation steps and formula explanations
+
+### Usage
+
+```bash
+node calculateRequiredCollateral.js
+```
+
 ## positionStatus.js
 
 This script evaluates the risk status of a user's position based on its Loan-to-Value (LTV) ratio.
