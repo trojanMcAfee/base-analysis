@@ -1,11 +1,33 @@
 import fetch from 'node-fetch';
-import { MORPHO_GRAPHQL_ENDPOINT, GRAPHQL_MARKET_ID } from './state/common.js';
+import { CBBTC_USDC_MARKET_ID, getBaseSubgraphEndpoint } from './state/common.js';
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { fetchMarketById } from './supplyBorrowLiq.js';
+
+// Load environment variables from .env.private
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.resolve(__dirname, '../.env.private') });
 
 // Function to make a GraphQL request
 async function makeGraphQLRequest(query, variables = {}) {
   try {
-    const response = await fetch(MORPHO_GRAPHQL_ENDPOINT, {
+    // Ensure we have the API key
+    const apiKey = process.env.THE_GRAPH_API_KEY;
+    if (!apiKey) {
+      throw new Error('THE_GRAPH_API_KEY is not defined in environment variables');
+    }
+
+    // Get the subgraph endpoint with the API key
+    const endpoint = getBaseSubgraphEndpoint();
+    
+    // Only log the endpoint on the first request
+    if (!makeGraphQLRequest.hasRun) {
+      console.log(`Using endpoint: ${endpoint}`);
+      makeGraphQLRequest.hasRun = true;
+    }
+
+    const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -31,38 +53,35 @@ async function makeGraphQLRequest(query, variables = {}) {
   }
 }
 
+// Initialize the flag
+makeGraphQLRequest.hasRun = false;
+
 // Function to fetch suppliers for the cbBTC/USDC market
 async function fetchUsdcSuppliers(skip, batchSize) {
   const query = `
     {
-      marketPositions(
+      positions(
         first: ${batchSize}
         skip: ${skip}
         where: {
-          supplyShares_gte: "1",
-          chainId_in: [8453],
-          marketId_in: ["${GRAPHQL_MARKET_ID}"]
+          supplyShares_gt: "0",
+          marketId: "${CBBTC_USDC_MARKET_ID}"
         }
       ) {
-        items {
+        id
+        user {
           id
-          user {
-            address
-          }
-          market {
-            id
-            loanAsset {
-              symbol
-              decimals
-            }
-          }
-          supplyShares
-          supplyAssets
-          state {
-            supplyAssetsUsd
-            timestamp
+        }
+        market {
+          id
+          borrowedToken {
+            symbol
+            decimals
           }
         }
+        supplyShares
+        supplyAssets
+        updatedAt
       }
     }
   `;
@@ -76,13 +95,13 @@ async function main() {
     console.log('Fetching top USDC suppliers for cbBTC/USDC market on Base...');
     
     // First, fetch the market data to get the total supply amount
-    const marketData = await fetchMarketById(GRAPHQL_MARKET_ID);
-    if (!marketData.market || !marketData.market.state) {
+    const marketData = await fetchMarketById(CBBTC_USDC_MARKET_ID);
+    if (!marketData.market) {
       console.error('Failed to fetch market data');
       return;
     }
     
-    const totalSupply = parseFloat(marketData.market.state.supplyAssets) / (10 ** marketData.market.loanAsset.decimals);
+    const totalSupply = parseFloat(marketData.market.totalSupply) / (10 ** marketData.market.borrowedToken.decimals);
     console.log(`Total USDC supplied to cbBTC/USDC market: ${totalSupply.toLocaleString(undefined, { maximumFractionDigits: 2 })} USDC`);
     
     // Parameters for fetching suppliers
@@ -93,18 +112,18 @@ async function main() {
     console.log('Fetching suppliers...');
     const suppliersData = await fetchUsdcSuppliers(skip, batchSize);
     
-    if (suppliersData.marketPositions && suppliersData.marketPositions.items) {
-      const suppliers = suppliersData.marketPositions.items;
+    if (suppliersData.positions) {
+      const suppliers = suppliersData.positions;
       
       // Process each supplier position
       const formattedSuppliers = suppliers.map(position => {
-        const userAddress = position.user.address;
-        const decimals = position.market.loanAsset.decimals;
+        const userAddress = position.user.id;
+        const decimals = position.market.borrowedToken.decimals;
         const decimalFactor = 10 ** decimals;
         
         // Parse values
         const supplyAmount = position.supplyAssets ? parseFloat(position.supplyAssets) / decimalFactor : 0;
-        const supplyUsd = position.state.supplyAssetsUsd ? parseFloat(position.state.supplyAssetsUsd) : supplyAmount; // For USDC, 1:1 with USD
+        const supplyUsd = supplyAmount; // For USDC, 1:1 with USD
         
         // Calculate percentage of total
         const percentOfTotal = totalSupply > 0 ? (supplyAmount / totalSupply) * 100 : 0;
@@ -114,7 +133,7 @@ async function main() {
           suppliedUSDC: supplyAmount,
           suppliedUSD: supplyUsd,
           percentOfTotal: percentOfTotal,
-          lastUpdated: position.state.timestamp ? new Date(parseInt(position.state.timestamp) * 1000).toISOString() : 'N/A'
+          lastUpdated: position.updatedAt ? new Date(parseInt(position.updatedAt) * 1000).toISOString() : 'N/A'
         };
       });
       

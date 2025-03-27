@@ -173,21 +173,6 @@ The script generates `morpho_positions_all.json` which contains:
   - Borrowed amount (in USDC and USD)
   - Calculated liquidation price
 
-## morphoPositionsCount.js
-
-This script counts the total number of active positions in the cbBTC/USDC market.
-
-### Key Features
-- Efficiently counts all open positions with active borrows
-- Uses pagination to handle large numbers of positions
-- Reports the total count of active borrowers in the market
-
-### Usage
-
-```bash
-node morphoPositionsCount.js
-```
-
 ## py-scripts/btc_liquidation_heatmap.py
 
 This Python script visualizes the distribution of liquidation prices across all positions.

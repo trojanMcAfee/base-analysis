@@ -1,332 +1,1338 @@
-Querying GraphQL schema...
+Querying Base chain subgraph schema...
 
 Available Query Fields:
-- chainSynchronizationStates
-- chainSynchronizationState
-  Arguments:
-    key: NON_NULL
-      (of type: String)
-    chainId: NON_NULL
-      (of type: Int)
-- chain
+- token
   Arguments:
     id: NON_NULL
-      (of type: Int)
-- chains
-- asset
+      (of type: ID)
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- tokens
   Arguments:
-    id: NON_NULL
-      (of type: String)
-- assetByAddress
-  Arguments:
-    address: NON_NULL
-      (of type: String)
-    chainId: Int
-- assets
-  Arguments:
-    first: Int
     skip: Int
-    where: AssetsFilters
-    orderBy: AssetOrderBy
+    first: Int
+    orderBy: Token_orderBy
     orderDirection: OrderDirection
-- transaction
+    where: Token_filter
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- interestRate
   Arguments:
     id: NON_NULL
-      (of type: String)
-- transactions
+      (of type: ID)
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- interestRates
   Arguments:
-    first: Int
     skip: Int
-    orderBy: TransactionsOrderBy
+    first: Int
+    orderBy: InterestRate_orderBy
     orderDirection: OrderDirection
-    where: TransactionFilters
-- user
+    where: InterestRate_filter
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- fee
   Arguments:
     id: NON_NULL
-      (of type: String)
-- userByAddress
+      (of type: ID)
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- fees
   Arguments:
-    address: NON_NULL
-      (of type: String)
-    chainId: Int
-- users
-  Arguments:
-    first: Int
     skip: Int
-    orderBy: UsersOrderBy
+    first: Int
+    orderBy: Fee_orderBy
     orderDirection: OrderDirection
-    where: UsersFilters
-- marketCollateralAtRisk
+    where: Fee_filter
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- revenueDetail
   Arguments:
-    uniqueKey: NON_NULL
-      (of type: String)
-    chainId: Int
-    numberOfPoints: Float
+    id: NON_NULL
+      (of type: ID)
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- revenueDetails
+  Arguments:
+    skip: Int
+    first: Int
+    orderBy: RevenueDetail_orderBy
+    orderDirection: OrderDirection
+    where: RevenueDetail_filter
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- oracle
+  Arguments:
+    id: NON_NULL
+      (of type: ID)
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- oracles
+  Arguments:
+    skip: Int
+    first: Int
+    orderBy: Oracle_orderBy
+    orderDirection: OrderDirection
+    where: Oracle_filter
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- lendingProtocol
+  Arguments:
+    id: NON_NULL
+      (of type: ID)
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- lendingProtocols
+  Arguments:
+    skip: Int
+    first: Int
+    orderBy: LendingProtocol_orderBy
+    orderDirection: OrderDirection
+    where: LendingProtocol_filter
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- marketList
+  Arguments:
+    id: NON_NULL
+      (of type: ID)
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- marketLists
+  Arguments:
+    skip: Int
+    first: Int
+    orderBy: _MarketList_orderBy
+    orderDirection: OrderDirection
+    where: _MarketList_filter
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- usageMetricsDailySnapshot
+  Arguments:
+    id: NON_NULL
+      (of type: ID)
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- usageMetricsDailySnapshots
+  Arguments:
+    skip: Int
+    first: Int
+    orderBy: UsageMetricsDailySnapshot_orderBy
+    orderDirection: OrderDirection
+    where: UsageMetricsDailySnapshot_filter
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- usageMetricsHourlySnapshot
+  Arguments:
+    id: NON_NULL
+      (of type: ID)
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- usageMetricsHourlySnapshots
+  Arguments:
+    skip: Int
+    first: Int
+    orderBy: UsageMetricsHourlySnapshot_orderBy
+    orderDirection: OrderDirection
+    where: UsageMetricsHourlySnapshot_filter
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- financialsDailySnapshot
+  Arguments:
+    id: NON_NULL
+      (of type: ID)
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- financialsDailySnapshots
+  Arguments:
+    skip: Int
+    first: Int
+    orderBy: FinancialsDailySnapshot_orderBy
+    orderDirection: OrderDirection
+    where: FinancialsDailySnapshot_filter
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
 - market
   Arguments:
     id: NON_NULL
-      (of type: String)
-- marketByUniqueKey
-  Arguments:
-    uniqueKey: NON_NULL
-      (of type: String)
-    chainId: Int
-- marketAverageApys
-  Arguments:
-    uniqueKey: NON_NULL
-      (of type: String)
-    chainId: Int
-    startTimestamp: NON_NULL
-      (of type: Float)
+      (of type: ID)
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
 - markets
   Arguments:
-    first: Int
     skip: Int
-    orderBy: MarketOrderBy
+    first: Int
+    orderBy: Market_orderBy
     orderDirection: OrderDirection
-    where: MarketFilters
-- curators
-  Arguments:
-    first: Int
-    skip: Int
-    where: CuratorFilters
-- marketOracleAccuracy
-  Arguments:
-    marketId: NON_NULL
-      (of type: String)
-    options: TimeseriesOptions
-- morphoBlue
+    where: Market_filter
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- marketDailySnapshot
   Arguments:
     id: NON_NULL
-      (of type: String)
-- morphoBlueByAddress
+      (of type: ID)
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- marketDailySnapshots
   Arguments:
-    address: NON_NULL
-      (of type: String)
-    chainId: Int
-- morphoBlues
-  Arguments:
-    first: Int
     skip: Int
-    orderBy: MorphoBlueOrderBy
+    first: Int
+    orderBy: MarketDailySnapshot_orderBy
     orderDirection: OrderDirection
-    where: MorphoBlueFilters
-- marketPosition
-  Arguments:
-    userAddress: NON_NULL
-      (of type: String)
-    marketUniqueKey: NON_NULL
-      (of type: String)
-    chainId: Int
-- marketPositions
-  Arguments:
-    first: Int
-    skip: Int
-    orderBy: MarketPositionOrderBy
-    orderDirection: OrderDirection
-    where: MarketPositionFilters
-- oracleFeedByAddress
-  Arguments:
-    address: NON_NULL
-      (of type: String)
-    chainId: Int
-- oracleFeeds
-  Arguments:
-    first: Int
-    skip: Int
-    where: OracleFeedsFilters
-- oracleVaultByAddress
-  Arguments:
-    address: NON_NULL
-      (of type: String)
-    chainId: Int
-- oracleVaults
-  Arguments:
-    first: Int
-    skip: Int
-    where: OracleVaultsFilters
-- oracleByAddress
-  Arguments:
-    address: NON_NULL
-      (of type: String)
-    chainId: Int
-- oracles
-  Arguments:
-    first: Int
-    skip: Int
-    where: OraclesFilters
-- publicAllocator
-  Arguments:
-    address: NON_NULL
-      (of type: String)
-    chainId: Int
-- publicAllocators
-  Arguments:
-    first: Int
-    skip: Int
-    orderBy: PublicAllocatorOrderBy
-    orderDirection: OrderDirection
-    where: PublicAllocatorFilters
-- publicAllocatorReallocates
-  Arguments:
-    first: Int
-    skip: Int
-    orderBy: PublicAllocatorReallocateOrderBy
-    orderDirection: OrderDirection
-    where: PublicallocatorReallocateFilters
-- search
-  Arguments:
-    search: NON_NULL
-      (of type: String)
-    marketOrderBy: MarketOrderBy
-    vaultOrderBy: VaultOrderBy
-    numberOfResults: Int
-    chainId_in: LIST
-      (of type: NON_NULL)
-- vaultFactory
+    where: MarketDailySnapshot_filter
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- marketHourlySnapshot
   Arguments:
     id: NON_NULL
-      (of type: String)
-- vaultFactoryByAddress
+      (of type: ID)
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- marketHourlySnapshots
   Arguments:
-    address: NON_NULL
-      (of type: String)
-    chainId: Int
-- vaultFactories
-- vault
+    skip: Int
+    first: Int
+    orderBy: MarketHourlySnapshot_orderBy
+    orderDirection: OrderDirection
+    where: MarketHourlySnapshot_filter
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- account
   Arguments:
     id: NON_NULL
-      (of type: String)
-- vaultByAddress
+      (of type: ID)
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- accounts
   Arguments:
-    address: NON_NULL
-      (of type: String)
-    chainId: Int
-- vaults
-  Arguments:
-    first: Int
     skip: Int
-    orderBy: VaultOrderBy
-    orderDirection: OrderDirection
-    where: VaultFilters
-- vaultPosition
-  Arguments:
-    userAddress: NON_NULL
-      (of type: String)
-    vaultAddress: NON_NULL
-      (of type: String)
-    chainId: Int
-- vaultPositions
-  Arguments:
     first: Int
-    skip: Int
-    orderBy: VaultPositionOrderBy
+    orderBy: Account_orderBy
     orderDirection: OrderDirection
-    where: VaultPositionFilters
-- vaultReallocates
+    where: Account_filter
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- position
   Arguments:
-    first: Int
+    id: NON_NULL
+      (of type: ID)
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- positions
+  Arguments:
     skip: Int
-    orderBy: VaultReallocateOrderBy
+    first: Int
+    orderBy: Position_orderBy
     orderDirection: OrderDirection
-    where: VaultReallocateFilters
+    where: Position_filter
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- positionSnapshot
+  Arguments:
+    id: NON_NULL
+      (of type: ID)
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- positionSnapshots
+  Arguments:
+    skip: Int
+    first: Int
+    orderBy: PositionSnapshot_orderBy
+    orderDirection: OrderDirection
+    where: PositionSnapshot_filter
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- activeAccount
+  Arguments:
+    id: NON_NULL
+      (of type: ID)
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- activeAccounts
+  Arguments:
+    skip: Int
+    first: Int
+    orderBy: _ActiveAccount_orderBy
+    orderDirection: OrderDirection
+    where: _ActiveAccount_filter
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- positionCounter
+  Arguments:
+    id: NON_NULL
+      (of type: ID)
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- positionCounters
+  Arguments:
+    skip: Int
+    first: Int
+    orderBy: _PositionCounter_orderBy
+    orderDirection: OrderDirection
+    where: _PositionCounter_filter
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- deposit
+  Arguments:
+    id: NON_NULL
+      (of type: ID)
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- deposits
+  Arguments:
+    skip: Int
+    first: Int
+    orderBy: Deposit_orderBy
+    orderDirection: OrderDirection
+    where: Deposit_filter
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- withdraw
+  Arguments:
+    id: NON_NULL
+      (of type: ID)
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- withdraws
+  Arguments:
+    skip: Int
+    first: Int
+    orderBy: Withdraw_orderBy
+    orderDirection: OrderDirection
+    where: Withdraw_filter
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- borrow
+  Arguments:
+    id: NON_NULL
+      (of type: ID)
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- borrows
+  Arguments:
+    skip: Int
+    first: Int
+    orderBy: Borrow_orderBy
+    orderDirection: OrderDirection
+    where: Borrow_filter
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- repay
+  Arguments:
+    id: NON_NULL
+      (of type: ID)
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- repays
+  Arguments:
+    skip: Int
+    first: Int
+    orderBy: Repay_orderBy
+    orderDirection: OrderDirection
+    where: Repay_filter
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- liquidate
+  Arguments:
+    id: NON_NULL
+      (of type: ID)
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- liquidates
+  Arguments:
+    skip: Int
+    first: Int
+    orderBy: Liquidate_orderBy
+    orderDirection: OrderDirection
+    where: Liquidate_filter
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- transfer
+  Arguments:
+    id: NON_NULL
+      (of type: ID)
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- transfers
+  Arguments:
+    skip: Int
+    first: Int
+    orderBy: Transfer_orderBy
+    orderDirection: OrderDirection
+    where: Transfer_filter
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- flashloan
+  Arguments:
+    id: NON_NULL
+      (of type: ID)
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- flashloans
+  Arguments:
+    skip: Int
+    first: Int
+    orderBy: Flashloan_orderBy
+    orderDirection: OrderDirection
+    where: Flashloan_filter
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- defaultOracle
+  Arguments:
+    id: NON_NULL
+      (of type: ID)
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- defaultOracles
+  Arguments:
+    skip: Int
+    first: Int
+    orderBy: _DefaultOracle_orderBy
+    orderDirection: OrderDirection
+    where: _DefaultOracle_filter
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- flashLoanPremium
+  Arguments:
+    id: NON_NULL
+      (of type: ID)
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- flashLoanPremiums
+  Arguments:
+    skip: Int
+    first: Int
+    orderBy: _FlashLoanPremium_orderBy
+    orderDirection: OrderDirection
+    where: _FlashLoanPremium_filter
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- chainlinkProxy
+  Arguments:
+    id: NON_NULL
+      (of type: ID)
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- chainlinkProxies
+  Arguments:
+    skip: Int
+    first: Int
+    orderBy: _ChainlinkProxy_orderBy
+    orderDirection: OrderDirection
+    where: _ChainlinkProxy_filter
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- chainlinkAggregator
+  Arguments:
+    id: NON_NULL
+      (of type: ID)
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- chainlinkAggregators
+  Arguments:
+    skip: Int
+    first: Int
+    orderBy: _ChainlinkAggregator_orderBy
+    orderDirection: OrderDirection
+    where: _ChainlinkAggregator_filter
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- badDebtRealization
+  Arguments:
+    id: NON_NULL
+      (of type: ID)
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- badDebtRealizations
+  Arguments:
+    skip: Int
+    first: Int
+    orderBy: BadDebtRealization_orderBy
+    orderDirection: OrderDirection
+    where: BadDebtRealization_filter
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- metaMorpho
+  Arguments:
+    id: NON_NULL
+      (of type: ID)
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- metaMorphos
+  Arguments:
+    skip: Int
+    first: Int
+    orderBy: MetaMorpho_orderBy
+    orderDirection: OrderDirection
+    where: MetaMorpho_filter
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- feeRecipient
+  Arguments:
+    id: NON_NULL
+      (of type: ID)
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- feeRecipients
+  Arguments:
+    skip: Int
+    first: Int
+    orderBy: FeeRecipient_orderBy
+    orderDirection: OrderDirection
+    where: FeeRecipient_filter
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- metaMorphoMarket
+  Arguments:
+    id: NON_NULL
+      (of type: ID)
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- metaMorphoMarkets
+  Arguments:
+    skip: Int
+    first: Int
+    orderBy: MetaMorphoMarket_orderBy
+    orderDirection: OrderDirection
+    where: MetaMorphoMarket_filter
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- pendingTimelock
+  Arguments:
+    id: NON_NULL
+      (of type: ID)
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- pendingTimelocks
+  Arguments:
+    skip: Int
+    first: Int
+    orderBy: PendingTimelock_orderBy
+    orderDirection: OrderDirection
+    where: PendingTimelock_filter
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- pendingCap
+  Arguments:
+    id: NON_NULL
+      (of type: ID)
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- pendingCaps
+  Arguments:
+    skip: Int
+    first: Int
+    orderBy: PendingCap_orderBy
+    orderDirection: OrderDirection
+    where: PendingCap_filter
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- pendingGuardian
+  Arguments:
+    id: NON_NULL
+      (of type: ID)
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- pendingGuardians
+  Arguments:
+    skip: Int
+    first: Int
+    orderBy: PendingGuardian_orderBy
+    orderDirection: OrderDirection
+    where: PendingGuardian_filter
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- newQueue
+  Arguments:
+    id: NON_NULL
+      (of type: ID)
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- newQueues
+  Arguments:
+    skip: Int
+    first: Int
+    orderBy: NewQueue_orderBy
+    orderDirection: OrderDirection
+    where: NewQueue_filter
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- metaMorphoPosition
+  Arguments:
+    id: NON_NULL
+      (of type: ID)
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- metaMorphoPositions
+  Arguments:
+    skip: Int
+    first: Int
+    orderBy: MetaMorphoPosition_orderBy
+    orderDirection: OrderDirection
+    where: MetaMorphoPosition_filter
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- metaMorphoAllocator
+  Arguments:
+    id: NON_NULL
+      (of type: ID)
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- metaMorphoAllocators
+  Arguments:
+    skip: Int
+    first: Int
+    orderBy: MetaMorphoAllocator_orderBy
+    orderDirection: OrderDirection
+    where: MetaMorphoAllocator_filter
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- metaMorphoDeposit
+  Arguments:
+    id: NON_NULL
+      (of type: ID)
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- metaMorphoDeposits
+  Arguments:
+    skip: Int
+    first: Int
+    orderBy: MetaMorphoDeposit_orderBy
+    orderDirection: OrderDirection
+    where: MetaMorphoDeposit_filter
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- metaMorphoWithdraw
+  Arguments:
+    id: NON_NULL
+      (of type: ID)
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- metaMorphoWithdraws
+  Arguments:
+    skip: Int
+    first: Int
+    orderBy: MetaMorphoWithdraw_orderBy
+    orderDirection: OrderDirection
+    where: MetaMorphoWithdraw_filter
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- allocatorSet
+  Arguments:
+    id: NON_NULL
+      (of type: ID)
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- allocatorSets
+  Arguments:
+    skip: Int
+    first: Int
+    orderBy: AllocatorSet_orderBy
+    orderDirection: OrderDirection
+    where: AllocatorSet_filter
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- metaMorphoTransfer
+  Arguments:
+    id: NON_NULL
+      (of type: ID)
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- metaMorphoTransfers
+  Arguments:
+    skip: Int
+    first: Int
+    orderBy: MetaMorphoTransfer_orderBy
+    orderDirection: OrderDirection
+    where: MetaMorphoTransfer_filter
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- metaMorphoPublicAllocator
+  Arguments:
+    id: NON_NULL
+      (of type: ID)
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- metaMorphoPublicAllocators
+  Arguments:
+    skip: Int
+    first: Int
+    orderBy: MetaMorphoPublicAllocator_orderBy
+    orderDirection: OrderDirection
+    where: MetaMorphoPublicAllocator_filter
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- metaMorphoPublicAllocatorMarket
+  Arguments:
+    id: NON_NULL
+      (of type: ID)
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- metaMorphoPublicAllocatorMarkets
+  Arguments:
+    skip: Int
+    first: Int
+    orderBy: MetaMorphoPublicAllocatorMarket_orderBy
+    orderDirection: OrderDirection
+    where: MetaMorphoPublicAllocatorMarket_filter
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- setFlowCapsEvent
+  Arguments:
+    id: NON_NULL
+      (of type: ID)
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- setFlowCapsEvents
+  Arguments:
+    skip: Int
+    first: Int
+    orderBy: SetFlowCapsEvent_orderBy
+    orderDirection: OrderDirection
+    where: SetFlowCapsEvent_filter
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- publicAllocatorReallocationToEvent
+  Arguments:
+    id: NON_NULL
+      (of type: ID)
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- publicAllocatorReallocationToEvents
+  Arguments:
+    skip: Int
+    first: Int
+    orderBy: PublicAllocatorReallocationToEvent_orderBy
+    orderDirection: OrderDirection
+    where: PublicAllocatorReallocationToEvent_filter
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- publicAllocatorWithdrawalEvent
+  Arguments:
+    id: NON_NULL
+      (of type: ID)
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- publicAllocatorWithdrawalEvents
+  Arguments:
+    skip: Int
+    first: Int
+    orderBy: PublicAllocatorWithdrawalEvent_orderBy
+    orderDirection: OrderDirection
+    where: PublicAllocatorWithdrawalEvent_filter
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- marketFlowCapsSet
+  Arguments:
+    id: NON_NULL
+      (of type: ID)
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- marketFlowCapsSets
+  Arguments:
+    skip: Int
+    first: Int
+    orderBy: MarketFlowCapsSet_orderBy
+    orderDirection: OrderDirection
+    where: MarketFlowCapsSet_filter
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- protocol
+  Arguments:
+    id: NON_NULL
+      (of type: ID)
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- protocols
+  Arguments:
+    skip: Int
+    first: Int
+    orderBy: Protocol_orderBy
+    orderDirection: OrderDirection
+    where: Protocol_filter
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- event
+  Arguments:
+    id: NON_NULL
+      (of type: ID)
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- events
+  Arguments:
+    skip: Int
+    first: Int
+    orderBy: Event_orderBy
+    orderDirection: OrderDirection
+    where: Event_filter
+    block: Block_height
+    subgraphError: NON_NULL
+      (of type: _SubgraphErrorPolicy_)
+- _meta
+  Arguments:
+    block: Block_height
 
-Looking for types related to positions or accounts:
+Looking for types related to markets or rates:
 
-Type: MarketPositionHistory
-  Fields:
-    - collateral: LIST
-        (of type: NON_NULL)
-    - collateralValue: LIST
-        (of type: NON_NULL)
-    - collateralUsd: LIST
-        (of type: NON_NULL)
-    - supplyAssets: LIST
-        (of type: NON_NULL)
-    - supplyAssetsUsd: LIST
-        (of type: NON_NULL)
-    - supplyShares: LIST
-        (of type: NON_NULL)
-    - borrowAssets: LIST
-        (of type: NON_NULL)
-    - borrowAssetsUsd: LIST
-        (of type: NON_NULL)
-    - borrowShares: LIST
-        (of type: NON_NULL)
-
-Type: MarketPositionState
+Type: Borrow
   Fields:
     - id: NON_NULL
-        (of type: ID)
+        (of type: Bytes)
+    - hash: NON_NULL
+        (of type: Bytes)
+    - nonce: NON_NULL
+        (of type: BigInt)
+    - logIndex: NON_NULL
+        (of type: Int)
+    - gasPrice: BigInt
+    - gasUsed: BigInt
+    - gasLimit: BigInt
+    - blockNumber: NON_NULL
+        (of type: BigInt)
     - timestamp: NON_NULL
         (of type: BigInt)
-    - collateral: NON_NULL
+    - account: NON_NULL
+        (of type: Account)
+    - accountActor: Account
+    - market: NON_NULL
+        (of type: Market)
+    - position: NON_NULL
+        (of type: Position)
+    - asset: NON_NULL
+        (of type: Token)
+    - amount: NON_NULL
         (of type: BigInt)
-    - collateralValue: BigInt
-    - collateralUsd: Float
-    - supplyAssets: BigInt
-    - supplyAssetsUsd: Float
-    - supplyShares: NON_NULL
+    - amountUSD: NON_NULL
+        (of type: BigDecimal)
+    - shares: NON_NULL
         (of type: BigInt)
-    - borrowAssets: BigInt
-    - borrowAssetsUsd: Float
-    - borrowShares: NON_NULL
-        (of type: BigInt)
-    - position: MarketPosition
+    - rates: LIST
+        (of type: NON_NULL)
 
-Type: MarketPosition
+Type: InterestRate
   Fields:
     - id: NON_NULL
         (of type: ID)
-    - healthFactor: Float
-    - priceVariationToLiquidationPrice: Float
-    - state: MarketPositionState
-    - historicalState: MarketPositionHistory
-    - user: NON_NULL
-        (of type: User)
+    - rate: NON_NULL
+        (of type: BigDecimal)
+    - side: NON_NULL
+        (of type: InterestRateSide)
+    - type: NON_NULL
+        (of type: InterestRateType)
     - market: NON_NULL
         (of type: Market)
 
-Type: VaultPositionState
+Type: Market
   Fields:
     - id: NON_NULL
-        (of type: ID)
+        (of type: Bytes)
+    - protocol: NON_NULL
+        (of type: LendingProtocol)
+    - name: NON_NULL
+        (of type: String)
+    - isActive: NON_NULL
+        (of type: Boolean)
+    - canBorrowFrom: NON_NULL
+        (of type: Boolean)
+    - canUseAsCollateral: NON_NULL
+        (of type: Boolean)
+    - maximumLTV: NON_NULL
+        (of type: BigDecimal)
+    - liquidationThreshold: NON_NULL
+        (of type: BigDecimal)
+    - liquidationPenalty: NON_NULL
+        (of type: BigDecimal)
+    - canIsolate: NON_NULL
+        (of type: Boolean)
+    - createdTimestamp: NON_NULL
+        (of type: BigInt)
+    - createdBlockNumber: NON_NULL
+        (of type: BigInt)
+    - oracle: NON_NULL
+        (of type: Oracle)
+    - relation: Bytes
+    - inputToken: NON_NULL
+        (of type: Token)
+    - inputTokenBalance: NON_NULL
+        (of type: BigInt)
+    - inputTokenPriceUSD: NON_NULL
+        (of type: BigDecimal)
+    - rates: LIST
+        (of type: NON_NULL)
+    - reserves: NON_NULL
+        (of type: BigDecimal)
+    - reserveFactor: NON_NULL
+        (of type: BigDecimal)
+    - borrowedToken: NON_NULL
+        (of type: Token)
+    - variableBorrowedTokenBalance: BigInt
+    - indexLastUpdatedTimestamp: BigInt
+    - supplyIndex: BigInt
+    - borrowIndex: BigInt
+    - totalValueLockedUSD: NON_NULL
+        (of type: BigDecimal)
+    - cumulativeSupplySideRevenueUSD: NON_NULL
+        (of type: BigDecimal)
+    - cumulativeProtocolSideRevenueUSD: NON_NULL
+        (of type: BigDecimal)
+    - cumulativeTotalRevenueUSD: NON_NULL
+        (of type: BigDecimal)
+    - revenueDetail: RevenueDetail
+    - totalDepositBalanceUSD: NON_NULL
+        (of type: BigDecimal)
+    - cumulativeDepositUSD: NON_NULL
+        (of type: BigDecimal)
+    - totalBorrowBalanceUSD: NON_NULL
+        (of type: BigDecimal)
+    - cumulativeBorrowUSD: NON_NULL
+        (of type: BigDecimal)
+    - cumulativeLiquidateUSD: NON_NULL
+        (of type: BigDecimal)
+    - cumulativeTransferUSD: NON_NULL
+        (of type: BigDecimal)
+    - cumulativeFlashloanUSD: NON_NULL
+        (of type: BigDecimal)
+    - transactionCount: NON_NULL
+        (of type: Int)
+    - depositCount: NON_NULL
+        (of type: Int)
+    - withdrawCount: NON_NULL
+        (of type: Int)
+    - borrowCount: NON_NULL
+        (of type: Int)
+    - repayCount: NON_NULL
+        (of type: Int)
+    - liquidationCount: NON_NULL
+        (of type: Int)
+    - transferCount: NON_NULL
+        (of type: Int)
+    - flashloanCount: NON_NULL
+        (of type: Int)
+    - cumulativeUniqueUsers: NON_NULL
+        (of type: Int)
+    - cumulativeUniqueDepositors: NON_NULL
+        (of type: Int)
+    - cumulativeUniqueBorrowers: NON_NULL
+        (of type: Int)
+    - cumulativeUniqueLiquidators: NON_NULL
+        (of type: Int)
+    - cumulativeUniqueLiquidatees: NON_NULL
+        (of type: Int)
+    - cumulativeUniqueTransferrers: NON_NULL
+        (of type: Int)
+    - cumulativeUniqueFlashloaners: NON_NULL
+        (of type: Int)
+    - positions: NON_NULL
+        (of type: LIST)
+    - positionCount: NON_NULL
+        (of type: Int)
+    - openPositionCount: NON_NULL
+        (of type: Int)
+    - closedPositionCount: NON_NULL
+        (of type: Int)
+    - lendingPositionCount: NON_NULL
+        (of type: Int)
+    - borrowingPositionCount: NON_NULL
+        (of type: Int)
+    - dailySnapshots: NON_NULL
+        (of type: LIST)
+    - hourlySnapshots: NON_NULL
+        (of type: LIST)
+    - deposits: NON_NULL
+        (of type: LIST)
+    - withdraws: NON_NULL
+        (of type: LIST)
+    - borrows: NON_NULL
+        (of type: LIST)
+    - repays: NON_NULL
+        (of type: LIST)
+    - liquidates: NON_NULL
+        (of type: LIST)
+    - transfers: NON_NULL
+        (of type: LIST)
+    - flashloans: NON_NULL
+        (of type: LIST)
+    - collateralPositionCount: NON_NULL
+        (of type: Int)
+    - totalCollateral: NON_NULL
+        (of type: BigInt)
+    - totalSupplyShares: NON_NULL
+        (of type: BigInt)
+    - totalBorrowShares: NON_NULL
+        (of type: BigInt)
+    - totalSupply: NON_NULL
+        (of type: BigInt)
+    - totalBorrow: NON_NULL
+        (of type: BigInt)
+    - lastUpdate: NON_NULL
+        (of type: BigInt)
+    - interest: NON_NULL
+        (of type: BigInt)
+    - fee: NON_NULL
+        (of type: BigInt)
+    - irm: NON_NULL
+        (of type: Bytes)
+    - lltv: NON_NULL
+        (of type: BigInt)
+
+Type: MarketDailySnapshot
+  Fields:
+    - id: NON_NULL
+        (of type: Bytes)
+    - days: NON_NULL
+        (of type: Int)
+    - protocol: NON_NULL
+        (of type: LendingProtocol)
+    - market: NON_NULL
+        (of type: Market)
+    - blockNumber: NON_NULL
+        (of type: BigInt)
     - timestamp: NON_NULL
         (of type: BigInt)
-    - assets: BigInt
-    - assetsUsd: Float
-    - shares: NON_NULL
+    - relation: Bytes
+    - inputTokenBalance: NON_NULL
         (of type: BigInt)
-    - position: VaultPosition
+    - inputTokenPriceUSD: NON_NULL
+        (of type: BigDecimal)
+    - outputTokenSupply: BigInt
+    - outputTokenPriceUSD: BigDecimal
+    - exchangeRate: BigDecimal
+    - rates: LIST
+        (of type: NON_NULL)
+    - reserves: BigDecimal
+    - reserveFactor: BigDecimal
+    - variableBorrowedTokenBalance: BigInt
+    - totalValueLockedUSD: NON_NULL
+        (of type: BigDecimal)
+    - cumulativeSupplySideRevenueUSD: NON_NULL
+        (of type: BigDecimal)
+    - dailySupplySideRevenueUSD: NON_NULL
+        (of type: BigDecimal)
+    - cumulativeProtocolSideRevenueUSD: NON_NULL
+        (of type: BigDecimal)
+    - dailyProtocolSideRevenueUSD: NON_NULL
+        (of type: BigDecimal)
+    - cumulativeTotalRevenueUSD: NON_NULL
+        (of type: BigDecimal)
+    - dailyTotalRevenueUSD: NON_NULL
+        (of type: BigDecimal)
+    - revenueDetail: RevenueDetail
+    - totalDepositBalanceUSD: NON_NULL
+        (of type: BigDecimal)
+    - dailyDepositUSD: NON_NULL
+        (of type: BigDecimal)
+    - dailyNativeDeposit: NON_NULL
+        (of type: BigInt)
+    - cumulativeDepositUSD: NON_NULL
+        (of type: BigDecimal)
+    - totalBorrowBalanceUSD: NON_NULL
+        (of type: BigDecimal)
+    - dailyBorrowUSD: NON_NULL
+        (of type: BigDecimal)
+    - dailyNativeBorrow: NON_NULL
+        (of type: BigInt)
+    - cumulativeBorrowUSD: NON_NULL
+        (of type: BigDecimal)
+    - dailyLiquidateUSD: NON_NULL
+        (of type: BigDecimal)
+    - dailyNativeLiquidate: NON_NULL
+        (of type: BigInt)
+    - cumulativeLiquidateUSD: NON_NULL
+        (of type: BigDecimal)
+    - dailyWithdrawUSD: NON_NULL
+        (of type: BigDecimal)
+    - dailyNativeWithdraw: NON_NULL
+        (of type: BigInt)
+    - dailyRepayUSD: NON_NULL
+        (of type: BigDecimal)
+    - dailyNativeRepay: NON_NULL
+        (of type: BigInt)
+    - dailyTransferUSD: NON_NULL
+        (of type: BigDecimal)
+    - dailyNativeTransfer: NON_NULL
+        (of type: BigInt)
+    - cumulativeTransferUSD: NON_NULL
+        (of type: BigDecimal)
+    - dailyFlashloanUSD: NON_NULL
+        (of type: BigDecimal)
+    - dailyNativeFlashloan: NON_NULL
+        (of type: BigInt)
+    - cumulativeFlashloanUSD: NON_NULL
+        (of type: BigDecimal)
+    - dailyActiveUsers: NON_NULL
+        (of type: Int)
+    - dailyActiveDepositors: NON_NULL
+        (of type: Int)
+    - dailyActiveBorrowers: NON_NULL
+        (of type: Int)
+    - dailyActiveLiquidators: NON_NULL
+        (of type: Int)
+    - dailyActiveLiquidatees: NON_NULL
+        (of type: Int)
+    - dailyActiveTransferrers: NON_NULL
+        (of type: Int)
+    - dailyActiveFlashloaners: NON_NULL
+        (of type: Int)
+    - dailyDepositCount: NON_NULL
+        (of type: Int)
+    - dailyWithdrawCount: NON_NULL
+        (of type: Int)
+    - dailyBorrowCount: NON_NULL
+        (of type: Int)
+    - dailyRepayCount: NON_NULL
+        (of type: Int)
+    - dailyLiquidateCount: NON_NULL
+        (of type: Int)
+    - dailyTransferCount: NON_NULL
+        (of type: Int)
+    - dailyFlashloanCount: NON_NULL
+        (of type: Int)
+    - positionCount: NON_NULL
+        (of type: Int)
+    - openPositionCount: NON_NULL
+        (of type: Int)
+    - closedPositionCount: NON_NULL
+        (of type: Int)
+    - lendingPositionCount: NON_NULL
+        (of type: Int)
+    - dailyActiveLendingPositionCount: NON_NULL
+        (of type: Int)
+    - borrowingPositionCount: NON_NULL
+        (of type: Int)
+    - dailyActiveBorrowingPositionCount: NON_NULL
+        (of type: Int)
 
-Type: VaultPositionHistory
-  Fields:
-    - assets: LIST
-        (of type: NON_NULL)
-    - assetsUsd: LIST
-        (of type: NON_NULL)
-    - shares: LIST
-        (of type: NON_NULL)
-
-Type: VaultPosition
+Type: MarketFlowCapsSet
   Fields:
     - id: NON_NULL
-        (of type: ID)
-    - state: VaultPositionState
-    - historicalState: VaultPositionHistory
-    - user: NON_NULL
-        (of type: User)
-    - vault: NON_NULL
-        (of type: Vault)
+        (of type: Bytes)
+    - metaMorphoPublicAllocator: NON_NULL
+        (of type: MetaMorphoPublicAllocator)
+    - marketPublicAllocator: NON_NULL
+        (of type: MetaMorphoPublicAllocatorMarket)
+    - prevFlowCapIn: NON_NULL
+        (of type: BigInt)
+    - flowCapIn: NON_NULL
+        (of type: BigInt)
+    - prevFlowCapOut: NON_NULL
+        (of type: BigInt)
+    - flowCapOut: NON_NULL
+        (of type: BigInt)
+    - setFlowCapsEvent: SetFlowCapsEvent
+    - publicReallocationEvent: PublicAllocatorReallocationToEvent
+    - publicWithdrawalEvent: PublicAllocatorWithdrawalEvent
 
-Type: PaginatedMetaMorphoPositions
+Type: MarketHourlySnapshot
   Fields:
-    - items: LIST
+    - id: NON_NULL
+        (of type: Bytes)
+    - hours: NON_NULL
+        (of type: Int)
+    - protocol: NON_NULL
+        (of type: LendingProtocol)
+    - market: NON_NULL
+        (of type: Market)
+    - blockNumber: NON_NULL
+        (of type: BigInt)
+    - timestamp: NON_NULL
+        (of type: BigInt)
+    - relation: Bytes
+    - inputTokenBalance: NON_NULL
+        (of type: BigInt)
+    - inputTokenPriceUSD: NON_NULL
+        (of type: BigDecimal)
+    - outputTokenSupply: BigInt
+    - outputTokenPriceUSD: BigDecimal
+    - exchangeRate: BigDecimal
+    - rates: LIST
         (of type: NON_NULL)
-    - pageInfo: PageInfo
+    - reserves: BigDecimal
+    - variableBorrowedTokenBalance: BigInt
+    - stableBorrowedTokenBalance: BigInt
+    - totalValueLockedUSD: NON_NULL
+        (of type: BigDecimal)
+    - cumulativeSupplySideRevenueUSD: NON_NULL
+        (of type: BigDecimal)
+    - hourlySupplySideRevenueUSD: NON_NULL
+        (of type: BigDecimal)
+    - cumulativeProtocolSideRevenueUSD: NON_NULL
+        (of type: BigDecimal)
+    - hourlyProtocolSideRevenueUSD: NON_NULL
+        (of type: BigDecimal)
+    - cumulativeTotalRevenueUSD: NON_NULL
+        (of type: BigDecimal)
+    - hourlyTotalRevenueUSD: NON_NULL
+        (of type: BigDecimal)
+    - totalDepositBalanceUSD: NON_NULL
+        (of type: BigDecimal)
+    - hourlyDepositUSD: NON_NULL
+        (of type: BigDecimal)
+    - cumulativeDepositUSD: NON_NULL
+        (of type: BigDecimal)
+    - totalBorrowBalanceUSD: NON_NULL
+        (of type: BigDecimal)
+    - hourlyBorrowUSD: NON_NULL
+        (of type: BigDecimal)
+    - cumulativeBorrowUSD: NON_NULL
+        (of type: BigDecimal)
+    - hourlyLiquidateUSD: NON_NULL
+        (of type: BigDecimal)
+    - cumulativeLiquidateUSD: NON_NULL
+        (of type: BigDecimal)
+    - hourlyWithdrawUSD: NON_NULL
+        (of type: BigDecimal)
+    - hourlyRepayUSD: NON_NULL
+        (of type: BigDecimal)
+    - hourlyTransferUSD: NON_NULL
+        (of type: BigDecimal)
+    - hourlyFlashloanUSD: NON_NULL
+        (of type: BigDecimal)
 
-Type: PaginatedMarketPositions
+Type: MetaMorphoMarket
   Fields:
-    - items: LIST
-        (of type: NON_NULL)
-    - pageInfo: PageInfo
+    - id: NON_NULL
+        (of type: Bytes)
+    - metaMorpho: NON_NULL
+        (of type: MetaMorpho)
+    - market: NON_NULL
+        (of type: Market)
+    - cap: NON_NULL
+        (of type: BigInt)
+    - enabled: NON_NULL
+        (of type: Boolean)
+    - removableAt: NON_NULL
+        (of type: BigInt)
+    - currentPendingCap: PendingCap
+    - isInSupplyQueue: NON_NULL
+        (of type: Boolean)
+    - isInWithdrawQueue: NON_NULL
+        (of type: Boolean)
+    - pendingCaps: NON_NULL
+        (of type: LIST)
+    - publicAllocatorMarket: MetaMorphoPublicAllocatorMarket
+
+Type: MetaMorphoPublicAllocatorMarket
+  Fields:
+    - id: NON_NULL
+        (of type: Bytes)
+    - metaMorphoPublicAllocator: NON_NULL
+        (of type: MetaMorphoPublicAllocator)
+    - market: NON_NULL
+        (of type: MetaMorphoMarket)
+    - flowCapIn: NON_NULL
+        (of type: BigInt)
+    - flowCapOut: NON_NULL
+        (of type: BigInt)
+    - reallocationToEvents: NON_NULL
+        (of type: LIST)
+    - withdrawalEvents: NON_NULL
+        (of type: LIST)
+    - flowCapsChanges: NON_NULL
+        (of type: LIST)
+
+Type: _MarketList
+  Fields:
+    - id: NON_NULL
+        (of type: Bytes)
+    - markets: NON_NULL
+        (of type: LIST)
