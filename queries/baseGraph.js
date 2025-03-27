@@ -61,27 +61,19 @@ async function fetchMarketById(marketId) {
     {
       market(id: "${marketId}") {
         id
-        name
         lltv
         inputToken {
           symbol
-          id
           decimals
         }
         borrowedToken {
           symbol
-          id
           decimals
         }
         totalSupply
         totalBorrow
-        totalBorrowShares
         liquidityAssets: inputTokenBalance
         totalCollateral
-        maximumLTV
-        liquidationThreshold
-        liquidationPenalty
-        lastUpdate
       }
     }
   `;
@@ -89,49 +81,13 @@ async function fetchMarketById(marketId) {
   return await makeGraphQLRequest(query);
 }
 
-// Function to fetch interest rates for a specific market
-async function fetchInterestRates(marketId) {
-  const query = `
-    {
-      lenderRates: interestRates(
-        first: 1
-        where: { 
-          market: "${marketId}",
-          side: LENDER
-        }
-        orderBy: rate
-        orderDirection: desc
-      ) {
-        id
-        rate
-        side
-      }
-      borrowerRates: interestRates(
-        first: 1
-        where: { 
-          market: "${marketId}",
-          side: BORROWER
-        }
-        orderBy: rate
-        orderDirection: desc
-      ) {
-        id
-        rate
-        side
-      }
-    }
-  `;
+// Calculate utilization rate
+function calculateUtilization(totalBorrow, totalSupply) {
+  if (!totalBorrow || !totalSupply || totalSupply === '0') {
+    return 0;
+  }
   
-  return await makeGraphQLRequest(query);
-}
-
-// Calculate APY from interest rate
-function calculateAPY(rate) {
-  // Formula: APY = (e^rate - 1)
-  if (!rate) return 0;
-  
-  const rateValue = parseFloat(rate);
-  return (Math.exp(rateValue) - 1) * 100;
+  return parseFloat(totalBorrow) / parseFloat(totalSupply);
 }
 
 // Function to format LLTV as percentage
@@ -178,15 +134,6 @@ async function getLLTV() {
   }
 }
 
-// Calculate utilization rate
-function calculateUtilization(totalBorrow, totalSupply) {
-  if (!totalBorrow || !totalSupply || totalSupply === '0') {
-    return 0;
-  }
-  
-  return parseFloat(totalBorrow) / parseFloat(totalSupply);
-}
-
 // Main function to orchestrate all queries
 async function main() {
   try {
@@ -194,8 +141,6 @@ async function main() {
     
     // Fetch the specific market by ID
     const marketData = await fetchMarketById(CBBTC_USDC_MARKET_ID);
-    // Fetch interest rates for the market
-    const ratesData = await fetchInterestRates(CBBTC_USDC_MARKET_ID);
     
     if (marketData.market) {
       const market = marketData.market;
@@ -209,31 +154,14 @@ async function main() {
       const loanDecimals = market.borrowedToken?.decimals || 0;
       const utilization = calculateUtilization(market.totalBorrow, market.totalSupply);
       
-      // Calculate APYs if rates data is available
-      const supplyAPY = ratesData.lenderRates && ratesData.lenderRates.length > 0 
-        ? calculateAPY(ratesData.lenderRates[0].rate) 
-        : 'N/A';
-      
-      const borrowAPY = ratesData.borrowerRates && ratesData.borrowerRates.length > 0 
-        ? calculateAPY(ratesData.borrowerRates[0].rate) 
-        : 'N/A';
-      
       console.log('\ncbBTC/USDC Market Status from The Graph:');
       console.log('------------------------------------------');
       console.log(`Market ID: ${market.id}`);
-      console.log(`Market Name: ${market.name}`);
       console.log(`Total Supply: ${formatValue(market.totalSupply, loanDecimals)} ${market.borrowedToken?.symbol || 'USDC'}`);
       console.log(`Total Borrow: ${formatValue(market.totalBorrow, loanDecimals)} ${market.borrowedToken?.symbol || 'USDC'}`);
       console.log(`Available Liquidity: ${formatValue(market.liquidityAssets, loanDecimals)} ${market.borrowedToken?.symbol || 'USDC'}`);
       console.log(`Utilization Rate: ${(utilization * 100).toFixed(2)}%`);
-      console.log(`Supply APY: ${typeof supplyAPY === 'number' ? supplyAPY.toFixed(2) + '%' : supplyAPY}`);
-      console.log(`Borrow APY: ${typeof borrowAPY === 'number' ? borrowAPY.toFixed(2) + '%' : borrowAPY}`);
       console.log(`Liquidation LTV: ${formatLLTV(market.lltv)}`);
-      console.log(`Maximum LTV: ${market.maximumLTV * 100}%`);
-      console.log(`Liquidation Threshold: ${market.liquidationThreshold * 100}%`);
-      console.log(`Liquidation Penalty: ${market.liquidationPenalty * 100}%`);
-      console.log(`Last Updated: ${market.lastUpdate ? new Date(parseInt(market.lastUpdate) * 1000).toISOString() : 'N/A'}`);
-      console.log(`Total Borrow Shares: ${market.totalBorrowShares}`);
       console.log(`Total Collateral: ${formatValue(market.totalCollateral, market.inputToken?.decimals || 8)} ${market.inputToken?.symbol || 'cbBTC'}`);
     } else {
       console.log('\nNo market found with the provided ID');
@@ -246,7 +174,7 @@ async function main() {
 }
 
 // Export functions to be used in other modules
-export { fetchMarketById, fetchInterestRates, main, formatLLTV, getLLTV };
+export { fetchMarketById, main, formatLLTV, getLLTV };
 
 // Execute the main function if this file is run directly
 if (import.meta.url === `file://${process.argv[1]}`) {
