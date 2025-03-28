@@ -1,13 +1,13 @@
 {
   "name": "basescan-analysis",
   "version": "1.0.0",
-  "type": "module",
-  "dependencies": {
-    "dotenv": "^16.4.7",
-    "node-fetch": "^3.3.2",
-    "web3": "^4.5.0"
-  },
+  "description": "Script to analyze Morpho positions on Base chain",
+  "main": "queries/testSubgraph.js",
   "scripts": {
-    "start": "node query_morpho_deployment.js"
+    "test": "node queries/testSubgraph.js"
+  },
+  "dependencies": {
+    "ethers": "^6.7.1",
+    "dotenv": "^16.3.1"
   }
 }
