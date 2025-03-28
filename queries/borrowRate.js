@@ -8,8 +8,6 @@ import { BLOCK_NUMBER, CBBTC_USDC_MARKET_ID, SUBGRAPH_ID, getBaseSubgraphEndpoin
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.resolve(__dirname, '../.env.private') });
 
-// Constants for Base chain subgraph
-const API_KEY = process.env.THE_GRAPH_API_KEY;
 
 // Function to make a direct GraphQL request
 async function makeGraphQLRequest(query, variables = {}) {

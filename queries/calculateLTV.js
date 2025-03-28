@@ -21,6 +21,8 @@ import {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
+// Also load from .env.private which contains THE_GRAPH_API_KEY
+dotenv.config({ path: path.resolve(__dirname, '../.env.private') });
 
 // Check if BASE_RPC_URL is defined
 if (!process.env.BASE_RPC_URL) {

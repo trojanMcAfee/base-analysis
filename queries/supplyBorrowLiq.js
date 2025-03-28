@@ -72,6 +72,8 @@ async function fetchMarketById(marketId) {
         }
         totalSupply
         totalBorrow
+        totalSupplyShares
+        totalBorrowShares
         liquidityAssets: inputTokenBalance
         totalCollateral
       }
@@ -158,7 +160,9 @@ async function main() {
       console.log('------------------------------------------');
       console.log(`Market ID: ${market.id}`);
       console.log(`Total Supply: ${formatValue(market.totalSupply, loanDecimals)} ${market.borrowedToken?.symbol || 'USDC'}`);
+      console.log(`Total Supply Shares: ${formatValue(market.totalSupplyShares, loanDecimals)}`);
       console.log(`Total Borrow: ${formatValue(market.totalBorrow, loanDecimals)} ${market.borrowedToken?.symbol || 'USDC'}`);
+      console.log(`Total Borrow Shares: ${formatValue(market.totalBorrowShares, loanDecimals)}`);
       console.log(`Available Liquidity: ${formatValue(market.liquidityAssets, loanDecimals)} ${market.borrowedToken?.symbol || 'USDC'}`);
       console.log(`Utilization Rate: ${(utilization * 100).toFixed(2)}%`);
       console.log(`Liquidation LTV: ${formatLLTV(market.lltv)}`);
