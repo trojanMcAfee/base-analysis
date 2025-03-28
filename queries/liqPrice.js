@@ -11,7 +11,6 @@ import {
   CBBTC_USDC_MARKET_ID,
   USER_ADDRESS,
   BLOCK_NUMBER,
-  GRAPHQL_MARKET_ID,
   calculateBorrowedAmount,
   parseLLTVToDecimal
 } from './state/common.js';
@@ -20,6 +19,8 @@ import {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
+// Also load from .env.private which contains THE_GRAPH_API_KEY
+dotenv.config({ path: path.resolve(__dirname, '../.env.private') });
 
 // Check if BASE_RPC_URL is defined
 if (!process.env.BASE_RPC_URL) {
@@ -46,16 +47,16 @@ async function calculateLiquidationPrice() {
     
     // Fetch market data from GraphQL
     console.log('\nFetching market data from GraphQL...');
-    const marketData = await fetchMarketById(GRAPHQL_MARKET_ID);
+    const marketData = await fetchMarketById(CBBTC_USDC_MARKET_ID);
     
-    if (marketData.market && marketData.market.state) {
+    if (marketData && marketData.market) {
       const market = marketData.market;
       
       // Calculate borrowed amount using the provided formula
       const borrowedAmount = calculateBorrowedAmount(
         position.borrowShares,
-        market.state.borrowAssets,
-        market.state.borrowShares
+        market.totalBorrow,
+        market.totalBorrowShares
       );
       
       // Convert borrowed amount to decimal

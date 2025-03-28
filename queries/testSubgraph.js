@@ -123,7 +123,49 @@ async function main() {
   }
 }
 
-main()
+
+
+
+// Function to query position at a specific block number
+async function main2() {
+  try {
+    // Connect to Base chain using Alchemy RPC from .env.private
+    const provider = new ethers.JsonRpcProvider(process.env.ALCHEMY_RPC_URL);
+    
+    // User address to query - same as in main()
+    const userAddress = '0x995fE46E7B12090bD98Cf200E912b9c07a935bBA';
+    
+    // The specific block number to query
+    const specificBlockNumber = 28192408;
+    console.log(`Querying position at specific block number: ${specificBlockNumber}`);
+    
+    // Create contract instance with full ABI
+    const morphoContract = new ethers.Contract(
+      MORPHO_CONTRACT_ADDRESS,
+      morphoABI,
+      provider
+    );
+    
+    // Call the position function at the specific block
+    console.log('Position data at block 28192408:');
+    const position = await morphoContract.position(
+      CBBTC_USDC_MARKET_ID,
+      userAddress,
+      { blockTag: specificBlockNumber }
+    );
+    
+    console.log('Supply Shares:', position.supplyShares.toString());
+    console.log('Borrow Shares:', position.borrowShares.toString());
+    console.log('Collateral:', position.collateral.toString());
+    
+  } catch (error) {
+    console.error('Error in main2:', error);
+  }
+} 
+
+
+
+main2()
   .then(() => process.exit(0))
   .catch((error) => {
     console.error(error);
