@@ -80,23 +80,43 @@ async function main() {
       
       console.log('Borrow transaction sent:', borrowTx.hash);
       
+      // Get the current block number immediately after sending transaction
+      const immediateBlockNumber = await provider.getBlockNumber();
+      console.log(`Querying position immediately after transaction sent at block number: ${immediateBlockNumber}`);
+
+      // Call the position function immediately after sending the borrow transaction
+      console.log('Position data IMMEDIATELY after transaction:');
+      const positionImmediate = await morphoContract.position(
+        CBBTC_USDC_MARKET_ID,
+        userAddress
+      );
+
+      console.log('Supply Shares:', positionImmediate.supplyShares.toString());
+      console.log('Borrow Shares:', positionImmediate.borrowShares.toString());
+      console.log('Collateral:', positionImmediate.collateral.toString());
+      
       // Wait for transaction to be mined
       const receipt = await borrowTx.wait();
       console.log('Borrow transaction confirmed in block:', receipt.blockNumber);
+
+      // Get the current block number after confirmation
+      const afterBlockNumber = await provider.getBlockNumber();
+      console.log(`Querying position after transaction confirmation at block number: ${afterBlockNumber}`);
+
+      // Call the position function AFTER borrowing is confirmed
+      console.log('Position data AFTER borrowing confirmation:');
+      const positionAfter = await morphoContract.position(
+        CBBTC_USDC_MARKET_ID,
+        userAddress
+      );
+
+      console.log('Supply Shares:', positionAfter.supplyShares.toString());
+      console.log('Borrow Shares:', positionAfter.borrowShares.toString());
+      console.log('Collateral:', positionAfter.collateral.toString());
+      
     } catch (borrowError) {
       console.error('Error during borrow operation:', borrowError);
     }
-
-    // Call the position function AFTER borrowing
-    console.log('Position data AFTER borrowing:');
-    const positionAfter = await morphoContract.position(
-      CBBTC_USDC_MARKET_ID,
-      userAddress
-    );
-
-    console.log('Supply Shares:', positionAfter.supplyShares.toString());
-    console.log('Borrow Shares:', positionAfter.borrowShares.toString());
-    console.log('Collateral:', positionAfter.collateral.toString());
 
   } catch (error) {
     console.error('Error:', error);
