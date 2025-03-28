@@ -43,7 +43,6 @@ except ImportError:
 
 # Constants from common.js
 CBBTC_USDC_MARKET_ID = '0x9103c3b4e834476c9a62ea009ba2c884ee42e94e6e314a26f04d312434191836'
-SUBGRAPH_ID = '71ZTy1veF9twER9CLMnPWeLQ7GZcwKsjmygejrgKirqs'
 
 # Constants for script
 CURRENT_BLOCK = 28148464  # March 27th, 2024
@@ -52,19 +51,19 @@ INTERVAL_DAYS = 7  # Query every 7 days
 BLOCKS_PER_DAY = 43200  # Approximately for Base chain (0.5s block time)
 
 # Get subgraph endpoint from environment
-def get_base_subgraph_endpoint():
-    api_key = os.getenv('THE_GRAPH_API_KEY')
-    if not api_key:
-        print("Warning: THE_GRAPH_API_KEY not found in environment variables")
-        print("Please ensure .env.private file contains THE_GRAPH_API_KEY=your_api_key")
-        # Check if you provided a value in the error message and ask for input
-        api_key = input("Enter your The Graph API key (or press Enter to exit): ")
-        if not api_key:
-            print("No API key provided, exiting")
+def get_subgraph_endpoint():
+    api_url = os.getenv('GOLDSKY_API_URL')
+    if not api_url:
+        print("Warning: GOLDSKY_API_URL not found in environment variables")
+        print("Please ensure .env.private file contains GOLDSKY_API_URL")
+        # Ask for input
+        api_url = input("Enter your Goldsky API URL (or press Enter to exit): ")
+        if not api_url:
+            print("No API URL provided, exiting")
             sys.exit(1)
-        os.environ['THE_GRAPH_API_KEY'] = api_key
+        os.environ['GOLDSKY_API_URL'] = api_url
     
-    return f"https://gateway.thegraph.com/api/{api_key}/subgraphs/id/{SUBGRAPH_ID}"
+    return api_url
 
 # Function to make a GraphQL request
 def make_graphql_request(query, variables=None):
@@ -73,7 +72,7 @@ def make_graphql_request(query, variables=None):
     
     try:
         response = requests.post(
-            get_base_subgraph_endpoint(),
+            get_subgraph_endpoint(),
             json={'query': query, 'variables': variables},
             headers={'Content-Type': 'application/json', 'Accept': 'application/json'}
         )
