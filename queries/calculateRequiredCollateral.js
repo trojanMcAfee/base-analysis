@@ -14,15 +14,17 @@ import {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
+// Also load from .env.private
+dotenv.config({ path: path.resolve(__dirname, '../.env.private') });
 
-// Check if BASE_RPC_URL is defined
-if (!process.env.BASE_RPC_URL) {
-  console.error('BASE_RPC_URL is not defined in the .env file');
+// Check if ALCHEMY_RPC_URL is defined
+if (!process.env.ALCHEMY_RPC_URL) {
+  console.error('ALCHEMY_RPC_URL is not defined in the .env.private file');
   process.exit(1);
 }
 
-// Initialize Web3 with Base RPC URL
-const web3 = new Web3(process.env.BASE_RPC_URL);
+// Initialize Web3 with Alchemy RPC URL
+const web3 = new Web3(process.env.ALCHEMY_RPC_URL);
 
 // Function to format LTV as a percentage with higher precision
 function formatLTVAsPercentage(ltv) {
