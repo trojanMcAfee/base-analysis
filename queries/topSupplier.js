@@ -11,13 +11,7 @@ dotenv.config({ path: path.resolve(__dirname, '../.env.private') });
 // Function to make a GraphQL request to the Base subgraph
 async function makeGraphQLRequest(query, variables = {}) {
   try {
-    // Ensure we have the API key
-    const apiKey = process.env.THE_GRAPH_API_KEY;
-    if (!apiKey) {
-      throw new Error('THE_GRAPH_API_KEY is not defined in environment variables');
-    }
-
-    // Get the subgraph endpoint with the API key
+    // Get the subgraph endpoint
     const endpoint = getBaseSubgraphEndpoint();
     
     console.log(`Using endpoint: ${endpoint}`);
