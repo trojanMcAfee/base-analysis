@@ -35,7 +35,7 @@ export const MORPHO_GRAPHQL_ENDPOINT = 'https://blue-api.morpho.org/graphql';
 // Base chain subgraph constants
 export const SUBGRAPH_ID = '71ZTy1veF9twER9CLMnPWeLQ7GZcwKsjmygejrgKirqs';
 export function getBaseSubgraphEndpoint() {
-  return process.env.GOLDSKY_API_URL;
+  return process.env.GOLDSKY_API_URL || `https://gateway.thegraph.com/api/${process.env.THE_GRAPH_API_KEY}/subgraphs/id/${SUBGRAPH_ID}`;
 }
 
 // Utility functions for big number math
