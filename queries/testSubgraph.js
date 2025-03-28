@@ -1,9 +1,14 @@
 import { ethers } from 'ethers';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { MORPHO_CONTRACT_ADDRESS, CBBTC_USDC_MARKET_ID } from './state/common.js';
 
-// Load environment variables
-dotenv.config();
+// Setup directory name for ES modules
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// Load environment variables from .env.private
+dotenv.config({ path: path.resolve(__dirname, '../.env.private') });
 
 // ABI fragment for the position function
 const ABI_FRAGMENT = [
@@ -45,8 +50,8 @@ const ABI_FRAGMENT = [
 
 async function main() {
   try {
-    // Connect to Base chain
-    const provider = new ethers.JsonRpcProvider(process.env.BASE_RPC_URL);
+    // Connect to Base chain using Alchemy RPC from .env.private
+    const provider = new ethers.JsonRpcProvider(process.env.ALCHEMY_RPC_URL);
 
     // User address to query
     const userAddress = '0x995fE46E7B12090bD98Cf200E912b9c07a935bBA';
