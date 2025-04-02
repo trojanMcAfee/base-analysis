@@ -155,7 +155,11 @@ async function main() {
       console.log(`Total Supply Shares: ${formatValue(market.totalSupplyShares, loanDecimals)}`);
       console.log(`Total Borrow: ${formatValue(market.totalBorrow, loanDecimals)} ${market.borrowedToken?.symbol || 'USDC'}`);
       console.log(`Total Borrow Shares: ${formatValue(market.totalBorrowShares, loanDecimals)}`);
-      console.log(`Available Liquidity: ${formatValue(market.liquidityAssets, loanDecimals)} ${market.borrowedToken?.symbol || 'USDC'}`);
+      
+      // Calculate available liquidity as Total Supply - Total Borrow
+      const availableLiquidity = parseFloat(market.totalSupply) - parseFloat(market.totalBorrow);
+      console.log(`Available Liquidity: ${formatValue(availableLiquidity.toString(), loanDecimals)} ${market.borrowedToken?.symbol || 'USDC'}`);
+      
       console.log(`Utilization Rate: ${(utilization * 100).toFixed(2)}%`);
       console.log(`Liquidation LTV: ${formatLLTV(market.lltv)}`);
       console.log(`Total Collateral: ${formatValue(market.totalCollateral, market.inputToken?.decimals || 8)} ${market.inputToken?.symbol || 'cbBTC'}`);
