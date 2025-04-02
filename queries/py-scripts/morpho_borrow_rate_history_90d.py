@@ -223,6 +223,10 @@ def plot_borrow_rate_history(df, output_dir):
     ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
     plt.xticks(rotation=45)
     
+    # Set y-axis to start at 0 and increment by 2
+    plt.ylim(0, 12)  # Set limit from 0 to 12 to ensure space for the highest point
+    plt.yticks(range(0, 13, 2))  # Creates ticks at 0, 2, 4, 6, 8, 10, 12
+    
     # Add grid
     plt.grid(True, alpha=0.3)
     
