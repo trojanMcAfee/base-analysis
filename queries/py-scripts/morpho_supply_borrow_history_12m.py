@@ -248,32 +248,21 @@ def plot_supply_borrow_history(df, output_dir):
     # Create second y-axis for Available Liquidity
     ax2 = ax1.twinx()
     
-    # Determine the scaling factor to align the two lines visually
-    # We want liquidity line to be close to borrow line
-    total_borrow_mean = df['total_borrow'].mean()
-    available_liquidity_mean = df['available_liquidity'].mean()
-    scale_factor = total_borrow_mean / available_liquidity_mean if available_liquidity_mean > 0 else 1
-    
-    # Adjust y-axis scaling based on data ranges to make lines appear close
+    # Plot Available Liquidity on the second axis
     available_liq_line = ax2.plot(df['date'], df['available_liquidity'], color=colors[1], marker='s', linewidth=2, label='Available Liquidity')
     ax2.set_ylabel('Available Liquidity (USDC)', fontsize=12, color=colors[1])
     ax2.tick_params(axis='y', labelcolor=colors[1])
     
-    # Set y-axis limits to ensure the lines are close together
-    ax1_min = df['total_borrow'].min() * 0.9
-    ax1_max = df['total_borrow'].max() * 1.1
-    ax1.set_ylim(ax1_min, ax1_max)
+    # Set y-axis limits based on data ranges plus a margin
+    ax1_min_val = df['total_borrow'].min()
+    ax1_max_val = df['total_borrow'].max()
+    ax1_margin = (ax1_max_val - ax1_min_val) * 0.1 # 10% margin
+    ax1.set_ylim(max(0, ax1_min_val - ax1_margin), ax1_max_val + ax1_margin)
     
-    ax2_min = df['available_liquidity'].min() * 0.9
-    ax2_max = df['available_liquidity'].max() * 1.1
-    
-    # Make sure ranges are proportional
-    ax2_range = ax2_max - ax2_min
-    ax1_range = ax1_max - ax1_min
-    ax2_min_adjusted = df['available_liquidity'].mean() - (ax1_range / 2) * (ax2_range / ax1_range) * 0.5
-    ax2_max_adjusted = df['available_liquidity'].mean() + (ax1_range / 2) * (ax2_range / ax1_range) * 0.5
-    
-    ax2.set_ylim(ax2_min_adjusted, ax2_max_adjusted)
+    ax2_min_val = df['available_liquidity'].min()
+    ax2_max_val = df['available_liquidity'].max()
+    ax2_margin = (ax2_max_val - ax2_min_val) * 0.1 # 10% margin
+    ax2.set_ylim(max(0, ax2_min_val - ax2_margin), ax2_max_val + ax2_margin)
     
     # Combine legends from both axes
     lines = total_borrow_line + available_liq_line
