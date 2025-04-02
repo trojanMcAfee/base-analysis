@@ -248,6 +248,40 @@ python3 morpho_borrow_rate_history_90d.py
 - requests: For API calls to The Graph
 - python-dotenv: For loading API keys from environment variables
 
+## py-scripts/morpho_supply_borrow_history_3m.py
+
+This Python script fetches and visualizes the Total Borrow and Available Liquidity for the cbBTC/USDC market over the past 3 months at weekly intervals.
+
+### Key Features
+- Queries the cbBTC/USDC market on Base at multiple historical blocks
+- Calculates block numbers for each weekly interval going back 90 days
+- Fetches Total Supply and Total Borrow using Morpho's GraphQL API via The Graph
+- Calculates Available Liquidity (Total Supply - Total Borrow)
+- Creates a dual-axis time series visualization of Total Borrow and Available Liquidity
+- Scales Y-axis values to millions for readability
+- Saves raw data (CSV) and visualization (PNG, SVG) for analysis
+
+### Usage
+
+```bash
+cd queries/py-scripts
+python3 morpho_supply_borrow_history_3m.py
+```
+
+### Output
+- Generates a dual-axis line chart visualization saved to `plots/png/morpho_supply_borrow_history_3m.png` and `plots/svg/morpho_supply_borrow_history_3m.svg`
+- Saves the raw data to `plots/png/morpho_supply_borrow_history_3m.csv`
+- Displays the trending Total Borrow and Available Liquidity over the specified time period
+- Highlights the most recent values with annotations
+
+### Dependencies
+- pandas: For data manipulation
+- matplotlib: For plotting the time series
+- seaborn: For enhanced visualizations
+- numpy: For numerical operations
+- requests: For API calls to The Graph
+- python-dotenv: For loading API keys from environment variables
+
 ## btcPrice.js
 
 This script fetches the current Bitcoin price from the Chainlink oracle on Base.
