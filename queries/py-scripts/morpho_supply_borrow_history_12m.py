@@ -226,6 +226,12 @@ def main():
     plot_supply_borrow_history(df, output_dir)
     
 def plot_supply_borrow_history(df, output_dir):
+    # --- Data Scaling --- 
+    # Scale data to millions
+    df['total_borrow'] = df['total_borrow'] / 1_000_000
+    df['available_liquidity'] = df['available_liquidity'] / 1_000_000
+    # -------------------
+
     # Set style
     sns.set_style('whitegrid')
     
@@ -235,25 +241,25 @@ def plot_supply_borrow_history(df, output_dir):
     # Set color palette
     colors = sns.color_palette("Set1")
     
-    # First y-axis for Total Borrow
+    # First y-axis for Total Borrow (scaled)
     total_borrow_line = ax1.plot(df['date'], df['total_borrow'], color=colors[0], marker='o', linewidth=2, label='Total Borrow')
     ax1.set_xlabel('Date', fontsize=12)
-    ax1.set_ylabel('Total Borrow (USDC)', fontsize=12, color=colors[0])
+    ax1.set_ylabel('Total Borrow (Millions of USDC)', fontsize=12, color=colors[0])
     ax1.tick_params(axis='y', labelcolor=colors[0])
     
     # Format x-axis dates - use more precise format for shorter timeframe
     ax1.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
     plt.xticks(rotation=45)
     
-    # Create second y-axis for Available Liquidity
+    # Create second y-axis for Available Liquidity (scaled)
     ax2 = ax1.twinx()
     
-    # Plot Available Liquidity on the second axis
+    # Plot Available Liquidity on the second axis (scaled)
     available_liq_line = ax2.plot(df['date'], df['available_liquidity'], color=colors[1], marker='s', linewidth=2, label='Available Liquidity')
-    ax2.set_ylabel('Available Liquidity (USDC)', fontsize=12, color=colors[1])
+    ax2.set_ylabel('Available Liquidity (Millions of USDC)', fontsize=12, color=colors[1])
     ax2.tick_params(axis='y', labelcolor=colors[1])
     
-    # Set y-axis limits based on data ranges plus a margin
+    # Set y-axis limits based on scaled data ranges plus a margin
     ax1_min_val = df['total_borrow'].min()
     ax1_max_val = df['total_borrow'].max()
     ax1_margin = (ax1_max_val - ax1_min_val) * 0.1 # 10% margin
@@ -275,11 +281,11 @@ def plot_supply_borrow_history(df, output_dir):
     # Add grid
     ax1.grid(True, alpha=0.3)
     
-    # Annotate the latest values
+    # Annotate the latest values (scaled)
     latest = df.iloc[-1]
     
-    # Annotate Total Borrow
-    ax1.annotate(f"{latest['total_borrow']:,.2f} USDC", 
+    # Annotate Total Borrow (scaled)
+    ax1.annotate(f"{latest['total_borrow']:,.2f} M USDC",
                 xy=(latest['date'], latest['total_borrow']),
                 xytext=(10, 10),
                 textcoords='offset points',
@@ -287,8 +293,8 @@ def plot_supply_borrow_history(df, output_dir):
                 color=colors[0],
                 bbox=dict(boxstyle='round,pad=0.5', fc='white', alpha=0.8))
     
-    # Annotate Available Liquidity
-    ax2.annotate(f"{latest['available_liquidity']:,.2f} USDC", 
+    # Annotate Available Liquidity (scaled)
+    ax2.annotate(f"{latest['available_liquidity']:,.2f} M USDC",
                 xy=(latest['date'], latest['available_liquidity']),
                 xytext=(10, -20),
                 textcoords='offset points',
