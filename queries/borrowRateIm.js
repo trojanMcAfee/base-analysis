@@ -2,7 +2,7 @@ import fetch from 'node-fetch';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { BLOCK_NUMBER, CBBTC_USDC_MARKET_ID, SUBGRAPH_ID, getBaseSubgraphEndpoint } from './state/common.js';
+import { BLOCK_NUMBER, CBBTC_USDC_MARKET_ID, getBaseSubgraphEndpoint } from './state/common.js';
 
 // Load environment variables from .env.private
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -39,13 +39,10 @@ async function makeGraphQLRequest(query, variables = {}) {
 }
 
 // Function to fetch a market's borrowing rate by ID at a specific block
-async function fetchBorrowingRate(marketId, blockNumber) {
-  // Add block parameter if blockNumber is provided
-  const blockParam = blockNumber ? `, block: { number: ${blockNumber} }` : '';
-  
+async function fetchBorrowingRate(marketId) {
   const query = `
     {
-      market(id: "${marketId}"${blockParam}) {
+      market(id: "${marketId}") {
         id
         rates {
           rate
@@ -63,10 +60,10 @@ async function fetchBorrowingRate(marketId, blockNumber) {
 async function main() {
   try {
     // Using BLOCK_NUMBER from common.js
-    console.log(`Fetching borrowing rate for cbBTC/USDC market at block ${BLOCK_NUMBER}...`);
+    console.log(`Fetching latest borrowing rate for cbBTC/USDC market...`);
     
-    // Fetch the borrowing rate for the market
-    const marketData = await fetchBorrowingRate(CBBTC_USDC_MARKET_ID, BLOCK_NUMBER);
+    // Fetch the borrowing rate for the market - remove BLOCK_NUMBER to get latest
+    const marketData = await fetchBorrowingRate(CBBTC_USDC_MARKET_ID);
     
     if (marketData.market && marketData.market.rates) {
       // Look for the borrow rate (side: BORROWER, type: VARIABLE)
