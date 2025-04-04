@@ -93,6 +93,24 @@ This script fetches the current borrowing rate for the cbBTC/USDC market from Mo
 node borrowRate.js
 ```
 
+## borrowRate24h.js
+
+This script calculates the average borrowing rate for the cbBTC/USDC market over the previous 24 hours.
+
+### Key Features
+- Fetches the latest block number from the Base subgraph.
+- Calculates approximate block numbers for each hour over the past 24 hours based on average block time.
+- Queries the borrowing rate for the cbBTC/USDC market at each calculated hourly block using Morpho's GraphQL API.
+- Averages the successfully fetched rates.
+- Displays the calculated 24-hour average borrowing rate as a percentage.
+- Logs the rate fetched for each hour (optional, controlled by commented-out log statements).
+
+### Usage
+
+```bash
+node borrowRate24h.js
+```
+
 ## calculateLTV.js
 
 This script calculates the Loan-to-Value (LTV) ratio for a specific user's position in the cbBTC/USDC market.
