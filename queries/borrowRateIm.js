@@ -39,10 +39,13 @@ async function makeGraphQLRequest(query, variables = {}) {
 }
 
 // Function to fetch a market's borrowing rate by ID at a specific block
-async function fetchBorrowingRate(marketId) {
+export async function fetchBorrowingRate(marketId, blockNumber) {
+  // Add block parameter if blockNumber is provided
+  const blockParam = blockNumber ? `, block: { number: ${blockNumber} }` : '';
+  
   const query = `
     {
-      market(id: "${marketId}") {
+      market(id: "${marketId}"${blockParam}) {
         id
         rates {
           rate
