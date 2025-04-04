@@ -207,7 +207,7 @@ def additional_analysis(df):
 def main():
     # Path to the JSON data file (adjusted for the new script location)
     queries_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    data_path = os.path.join(queries_dir, 'data', 'morpho_positions_all.json')
+    data_path = os.path.join(queries_dir, 'data', 'morpho_positions_latest.json')
     
     # Load data
     data = load_position_data(data_path)

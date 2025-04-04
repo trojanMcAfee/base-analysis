@@ -5,7 +5,6 @@ import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { 
   CBBTC_USDC_MARKET_ID, 
-  BLOCK_NUMBER, 
   parseLLTVToDecimal, 
   getBaseSubgraphEndpoint 
 } from './state/common.js';
@@ -50,7 +49,6 @@ async function fetchMarketData() {
     {
       markets(
         where: { id: "${CBBTC_USDC_MARKET_ID}" }
-        block: { number: ${BLOCK_NUMBER} }
       ) {
         id
         name
@@ -74,14 +72,13 @@ async function fetchMarketData() {
   return await makeGraphQLRequest(query);
 }
 
-// Function to fetch all positions for the CBBTC/USDC market at a specific block
-async function fetchAllPositionsAtBlock(first = 100, skip = 0) {
+// Function to fetch all positions for the CBBTC/USDC market at the latest block
+async function fetchAllPositionsAtLatestBlock(first = 100, skip = 0) {
   const query = `
     {
       positions(
         first: ${first}
         skip: ${skip}
-        block: { number: ${BLOCK_NUMBER} }
         where: {
           market: "${CBBTC_USDC_MARKET_ID}",
           hashClosed: null
@@ -114,7 +111,7 @@ async function fetchAllPositionsAtBlock(first = 100, skip = 0) {
 // Main function to orchestrate the query
 async function main() {
   try {
-    console.log(`Fetching all positions for cbBTC/USDC market (ID: ${CBBTC_USDC_MARKET_ID}) at block ${BLOCK_NUMBER}...`);
+    console.log(`Fetching all positions for cbBTC/USDC market (ID: ${CBBTC_USDC_MARKET_ID}) at the latest block...`);
     
     // Create data directory if it doesn't exist
     const dataDir = path.join(process.cwd(), 'data');
@@ -159,7 +156,7 @@ async function main() {
     
     while (hasMorePositions) {
       console.log(`Fetching positions ${skip} to ${skip + batchSize - 1}...`);
-      const positionsData = await fetchAllPositionsAtBlock(batchSize, skip);
+      const positionsData = await fetchAllPositionsAtLatestBlock(batchSize, skip);
       
       if (!positionsData.positions || positionsData.positions.length === 0) {
         console.log('No more positions to fetch.');
@@ -299,7 +296,7 @@ async function main() {
     }
     
     // Save to JSON file
-    const outputFilePath = path.join('data', `morpho_positions_block_${BLOCK_NUMBER}.json`);
+    const outputFilePath = path.join('data', `morpho_positions_latest.json`);
     fs.writeFileSync(outputFilePath, JSON.stringify(outputData, null, 2));
     
     console.log(`\nData successfully saved to ${outputFilePath}.`);
