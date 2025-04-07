@@ -75,15 +75,8 @@ const GET_MARKET_LIQUIDITY = `
 // Main function to orchestrate the query
 async function main() {
   const chainId = 8453; // Base Chain ID
-  const assetSymbol = 'USDC'; // The loan asset for this market
-  const decimals = 6;       // Decimals for USDC on Base
 
   try {
-    console.log(`Querying Morpho Blue API for market liquidity...`);
-    console.log(`Market Unique Key: ${CBBTC_USDC_MARKET_ID}`);
-    console.log(`Chain ID: ${chainId}`);
-    console.log(`Assuming Loan Asset: ${assetSymbol} (Decimals: ${decimals})`);
-
     const variables = {
         uniqueKey: CBBTC_USDC_MARKET_ID,
         chainId: chainId
@@ -92,74 +85,24 @@ async function main() {
 
     if (data && data.marketByUniqueKey) {
       const market = data.marketByUniqueKey;
-      // const assetSymbol = market.asset?.symbol || 'N/A'; // Removed
-      // const decimals = market.asset?.decimals || 18; // Removed
 
-      // API returns values as strings, likely representing the smallest unit (e.g., 1 USDC = 1,000,000)
-      // Convert to BigInt for safety, then format
-      const reallocatableLiquidityRaw = BigInt(market.reallocatableLiquidityAssets || '0');
-      const stateLiquidityRaw = BigInt(market.state?.liquidityAssets || '0');
+      // Get the raw reallocatable liquidity
+      const reallocatableLiquidityRaw = market.reallocatableLiquidityAssets || '0';
 
-      // Format the BigInt values to readable decimal strings
-      const formatUnits = (value, dec) => {
-          let str = value.toString();
-          const len = str.length;
-          if (len <= dec) {
-              return '0.' + '0'.repeat(dec - len) + str;
-          }
-          return str.slice(0, len - dec) + '.' + str.slice(len - dec);
-      };
-
-      const reallocatableLiquidityFormatted = formatUnits(reallocatableLiquidityRaw, decimals);
-      const stateLiquidityFormatted = formatUnits(stateLiquidityRaw, decimals);
-
-      // Calculate Total Available Liquidity (Raw and Formatted)
-      const totalAvailableLiquidityRaw = stateLiquidityRaw + reallocatableLiquidityRaw;
-      const totalAvailableLiquidityFormatted = formatUnits(totalAvailableLiquidityRaw, decimals);
-
-      // Process public allocator shared liquidity if present
-      const allocators = market.publicAllocatorSharedLiquidity || [];
-
-      console.log(`
-Market Found: ${market.uniqueKey} (${assetSymbol})`);
-      console.log(`--------------------------------------------------`);
-      console.log(`State Liquidity Assets (Raw):      ${market.state?.liquidityAssets || 'N/A'}`);
-      console.log(`State Liquidity Assets (Formatted):  ${stateLiquidityFormatted} ${assetSymbol}`);
-      console.log(`Reallocatable Liquidity (Raw):    ${market.reallocatableLiquidityAssets || 'N/A'}`);
-      console.log(`Reallocatable Liquidity (Formatted): ${reallocatableLiquidityFormatted} ${assetSymbol}`);
-      console.log(`--------------------------------------------------`);
-      console.log(`TOTAL AVAILABLE LIQUIDITY (Fmt):   ${totalAvailableLiquidityFormatted} ${assetSymbol}`);
-      console.log(` (State Liquidity + Reallocatable)`);
-      console.log(`--------------------------------------------------`);
-
-      if (allocators.length > 0) {
-          console.log(`Public Allocator Shared Liquidity:`);
-          allocators.forEach((allocator, index) => {
-              const allocatorAssetsRaw = BigInt(allocator.assets || '0');
-              const allocatorAssetsFormatted = formatUnits(allocatorAssetsRaw, decimals);
-              console.log(`  Allocator ${index + 1}:`);
-              console.log(`    Vault Name:    ${allocator.vault?.name || 'N/A'}`);
-              console.log(`    Vault Address: ${allocator.vault?.address || 'N/A'}`);
-              console.log(`    Market Key:    ${allocator.allocationMarket?.uniqueKey || 'N/A'}`);
-              console.log(`    Assets (Raw):  ${allocator.assets || 'N/A'}`);
-              console.log(`    Assets (Fmt):  ${allocatorAssetsFormatted} ${assetSymbol}`);
-          });
-          console.log(`--------------------------------------------------`);
-      } else {
-          console.log(`No Public Allocator Shared Liquidity data found.`);
-          console.log(`--------------------------------------------------`);
-      }
-
-      // Explanation of terms (based on potential Morpho Blue context):
-      // - state.liquidityAssets: The total amount of the asset currently held idle in the market's buffer, available for borrowing.
-      // - reallocatableLiquidityAssets: Liquidity supplied via MetaMorpho vaults that could potentially be moved between markets by allocators. This might overlap with or be part of state.liquidityAssets depending on the exact mechanism.
+      // Output ONLY the raw reallocatable liquidity value
+      console.log(reallocatableLiquidityRaw);
 
     } else {
-      console.log('Market data not found via Morpho Blue API.');
+      // Optionally log an error to stderr or output a specific value like '0' or 'Error' on failure
+      // For now, just outputting '0' if market not found
+      console.log('0');
     }
 
   } catch (error) {
-    console.error('\nError fetching market liquidity from Morpho Blue API:', error.message);
+    // Log errors to stderr to avoid polluting stdout
+    console.error('Error fetching market liquidity:', error.message);
+    // Output '0' or another indicator on error
+    console.log('0'); 
   }
 }
 

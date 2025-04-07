@@ -158,7 +158,7 @@ async function main() {
       
       // Calculate available liquidity as Total Supply - Total Borrow
       const availableLiquidity = parseFloat(market.totalSupply) - parseFloat(market.totalBorrow);
-      console.log(`Available Liquidity: ${formatValue(availableLiquidity.toString(), loanDecimals)} ${market.borrowedToken?.symbol || 'USDC'}`);
+      console.log(`Available Liquidity (w/o Allocators): ${formatValue(availableLiquidity.toString(), loanDecimals)} ${market.borrowedToken?.symbol || 'USDC'}`);
       
       console.log(`Utilization Rate: ${(utilization * 100).toFixed(2)}%`);
       console.log(`Liquidation LTV: ${formatLLTV(market.lltv)}`);
