@@ -113,6 +113,10 @@ async function main() {
       const reallocatableLiquidityFormatted = formatUnits(reallocatableLiquidityRaw, decimals);
       const stateLiquidityFormatted = formatUnits(stateLiquidityRaw, decimals);
 
+      // Calculate Total Available Liquidity (Raw and Formatted)
+      const totalAvailableLiquidityRaw = stateLiquidityRaw + reallocatableLiquidityRaw;
+      const totalAvailableLiquidityFormatted = formatUnits(totalAvailableLiquidityRaw, decimals);
+
       // Process public allocator shared liquidity if present
       const allocators = market.publicAllocatorSharedLiquidity || [];
 
@@ -123,6 +127,9 @@ Market Found: ${market.uniqueKey} (${assetSymbol})`);
       console.log(`State Liquidity Assets (Formatted):  ${stateLiquidityFormatted} ${assetSymbol}`);
       console.log(`Reallocatable Liquidity (Raw):    ${market.reallocatableLiquidityAssets || 'N/A'}`);
       console.log(`Reallocatable Liquidity (Formatted): ${reallocatableLiquidityFormatted} ${assetSymbol}`);
+      console.log(`--------------------------------------------------`);
+      console.log(`TOTAL AVAILABLE LIQUIDITY (Fmt):   ${totalAvailableLiquidityFormatted} ${assetSymbol}`);
+      console.log(` (State Liquidity + Reallocatable)`);
       console.log(`--------------------------------------------------`);
 
       if (allocators.length > 0) {
