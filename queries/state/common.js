@@ -1,3 +1,7 @@
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
 // Shared constants and variables used across scripts
 
 // Math constants for calculations
@@ -34,8 +38,42 @@ export const MORPHO_GRAPHQL_ENDPOINT = 'https://blue-api.morpho.org/graphql';
 
 // Base chain subgraph constants
 export const SUBGRAPH_ID = '71ZTy1veF9twER9CLMnPWeLQ7GZcwKsjmygejrgKirqs';
+
+function readEnvVariable(key) {
+  try {
+    const __dirname = path.dirname(fileURLToPath(import.meta.url));
+    // Construct the path relative to common.js -> ../../.env.private
+    const envPath = path.resolve(__dirname, '../../.env.private'); 
+    if (!fs.existsSync(envPath)) {
+      console.warn(`.env.private file not found at ${envPath}`);
+      return undefined;
+    }
+    const envFileContent = fs.readFileSync(envPath, { encoding: 'utf8' });
+    const lines = envFileContent.split('\n');
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+      if (trimmedLine.startsWith(key + '=')) {
+        return trimmedLine.substring(key.length + 1);
+      }
+    }
+  } catch (error) {
+    console.error(`Error reading or parsing .env.private for key ${key}:`, error);
+  }
+  return undefined;
+}
+
 export function getBaseSubgraphEndpoint() {
-  return process.env.GOLDSKY_API_URL;
+  // First, try process.env (might be set externally or by a working dotenv)
+  if (process.env.GOLDSKY_API_URL) {
+    return process.env.GOLDSKY_API_URL;
+  }
+  // Fallback: Read directly from .env.private
+  console.warn('GOLDSKY_API_URL not found in process.env, attempting direct read from .env.private...');
+  const apiUrl = readEnvVariable('GOLDSKY_API_URL');
+  if (!apiUrl) {
+     console.error('Failed to get GOLDSKY_API_URL from both process.env and direct file read.');
+  }
+  return apiUrl; 
 }
 
 // Utility functions for big number math
