@@ -145,6 +145,28 @@ This script calculates the required collateral amount for a given BORROWED_AMOUN
 node calculateRequiredCollateral.js
 ```
 
+## getMarketLiquidity.js
+
+This script queries the Morpho Blue API for the cbBTC/USDC market on Base and outputs *only* the raw, unformatted `reallocatableLiquidityAssets` value.
+
+This script is primarily intended to be called by other scripts (e.g., `supplyBorrowLiq.js`) that need this specific raw value.
+
+### Key Features
+- Queries the Morpho Blue GraphQL API (`https://blue-api.morpho.org/graphql`)
+- Targets the specific cbBTC/USDC market (using `CBBTC_USDC_MARKET_ID` from `common.js`) on Base (Chain ID 8453)
+- Outputs *only* the raw `reallocatableLiquidityAssets` value as a string to standard output
+- Outputs '0' if the market is not found or if an error occurs during fetching (errors are logged to stderr)
+
+### Usage
+
+```bash
+node getMarketLiquidity.js
+```
+
+### Output
+
+The script's standard output will be a single number string representing the raw `reallocatableLiquidityAssets` (e.g., `1500000000`), or the string `'0'` if the data cannot be fetched.
+
 ## positionStatus.js
 
 This script evaluates the risk status of a user's position based on its Loan-to-Value (LTV) ratio.
