@@ -93,8 +93,8 @@ async function fetchAllUserTransactions(userAddress, limitPerType = 10) {
         hash
         blockNumber
         timestamp
-        liquidator { id } # Fetching id which is the address
-        liquidatee { id } # Fetching id which is the address
+        liquidator { id }
+        liquidatee { id } 
         market {
           inputToken {
             symbol
