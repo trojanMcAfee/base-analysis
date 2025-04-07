@@ -19,29 +19,25 @@ node supplyBorrowLiq.js
 
 ## userTransactions.js
 
-This script fetches a user's transaction history and position data on Morpho's Base deployments.
+This script fetches a user's transaction history from the Base Morpho subgraph (via Goldsky).
 
 ### Key Features
-- Retrieves user information using Morpho's GraphQL API with proper chain ID parameters
-- Shows detailed information about user's active positions including:
-  - Market details (collateral/loan assets)
-  - Supply and borrow shares
-  - Collateral amounts
-  - Health factor
-  - Last updated timestamp
-- Lists the user's transaction history with:
-  - Transaction hash
-  - Transaction type (formatted for readability)
-  - Block number
-  - Timestamp
+- Queries the Base subgraph endpoint specified by the `GOLDSKY_API_URL` environment variable (loaded via `common.js`).
+- Fetches transaction history for a **hardcoded** user address (`0x9e607f673af8d0Adc840605845F0a5A79924709f`) within the script.
+- Retrieves different transaction types separately:
+  - `deposits`, `withdraws`, `borrows`, `repays`: Fetched by filtering where the user address matches the `account` field.
+  - `liquidates`: Fetched by filtering specifically where the user address matches the `liquidatee` field (i.e., instances where the user was liquidated).
+- Combines all fetched transactions and sorts them by timestamp in descending order.
+- Formats and prints the transaction list, including hash, type, block number, timestamp, and market token symbol.
+- Halts execution if any underlying GraphQL query fails.
 
 ### Usage
 
-```bash
-node userTransactions.js [userAddress] [blockNumber]
-```
+The script uses a hardcoded address and fetches the latest data, so it is run without arguments:
 
-If no parameters are provided, the script uses the default USER_ADDRESS and BLOCK_NUMBER from common.js.
+```bash
+node userTransactions.js
+```
 
 ## topSuppliers.js
 
