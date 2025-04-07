@@ -53,10 +53,20 @@ async function makeGraphQLRequest(query, variables = {}) {
 const GET_MARKET_LIQUIDITY = `
   query MarketByUniqueKey($uniqueKey: String!, $chainId: Int!) {
     marketByUniqueKey(uniqueKey: $uniqueKey, chainId: $chainId) {
-      uniqueKey 
-      reallocatableLiquidityAssets 
+      uniqueKey
+      reallocatableLiquidityAssets
       state {
         liquidityAssets
+      }
+      publicAllocatorSharedLiquidity {
+        assets
+        vault {
+          address
+          name
+        }
+        allocationMarket {
+          uniqueKey
+        }
       }
     }
   }
@@ -103,6 +113,8 @@ async function main() {
       const reallocatableLiquidityFormatted = formatUnits(reallocatableLiquidityRaw, decimals);
       const stateLiquidityFormatted = formatUnits(stateLiquidityRaw, decimals);
 
+      // Process public allocator shared liquidity if present
+      const allocators = market.publicAllocatorSharedLiquidity || [];
 
       console.log(`
 Market Found: ${market.uniqueKey} (${assetSymbol})`);
@@ -112,6 +124,24 @@ Market Found: ${market.uniqueKey} (${assetSymbol})`);
       console.log(`Reallocatable Liquidity (Raw):    ${market.reallocatableLiquidityAssets || 'N/A'}`);
       console.log(`Reallocatable Liquidity (Formatted): ${reallocatableLiquidityFormatted} ${assetSymbol}`);
       console.log(`--------------------------------------------------`);
+
+      if (allocators.length > 0) {
+          console.log(`Public Allocator Shared Liquidity:`);
+          allocators.forEach((allocator, index) => {
+              const allocatorAssetsRaw = BigInt(allocator.assets || '0');
+              const allocatorAssetsFormatted = formatUnits(allocatorAssetsRaw, decimals);
+              console.log(`  Allocator ${index + 1}:`);
+              console.log(`    Vault Name:    ${allocator.vault?.name || 'N/A'}`);
+              console.log(`    Vault Address: ${allocator.vault?.address || 'N/A'}`);
+              console.log(`    Market Key:    ${allocator.allocationMarket?.uniqueKey || 'N/A'}`);
+              console.log(`    Assets (Raw):  ${allocator.assets || 'N/A'}`);
+              console.log(`    Assets (Fmt):  ${allocatorAssetsFormatted} ${assetSymbol}`);
+          });
+          console.log(`--------------------------------------------------`);
+      } else {
+          console.log(`No Public Allocator Shared Liquidity data found.`);
+          console.log(`--------------------------------------------------`);
+      }
 
       // Explanation of terms (based on potential Morpho Blue context):
       // - state.liquidityAssets: The total amount of the asset currently held idle in the market's buffer, available for borrowing.
