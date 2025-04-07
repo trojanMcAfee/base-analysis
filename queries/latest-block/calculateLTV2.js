@@ -2,23 +2,24 @@ import { Web3 } from 'web3';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { fetchMarketById } from './supplyBorrowLiq.js';
-import { morphoABI, chainlinkOracleABI } from './state/abis.js';
+import { fetchMarketById } from '../supplyBorrowLiq.js';
+import { morphoABI, chainlinkOracleABI } from '../state/abis.js';
 import { 
   MORPHO_CONTRACT_ADDRESS,
   CHAINLINK_ORACLE_ADDRESS,
   CBBTC_USDC_MARKET_ID,
-  USER_ADDRESS,
-  BLOCK_NUMBER,
   calculateBorrowedAmount
-} from './state/common.js';
+} from '../state/common.js';
+
+// Hardcoded user address
+const USER_ADDRESS = '0x9e607f673af8d0Adc840605845F0a5A79924709f';
 
 // Configure environment variables
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-dotenv.config({ path: path.resolve(__dirname, '../.env') });
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 // Also load from .env.private which contains THE_GRAPH_API_KEY
-dotenv.config({ path: path.resolve(__dirname, '../.env.private') });
+dotenv.config({ path: path.resolve(__dirname, '../../.env.private') });
 
 // Check if ALCHEMY_RPC_URL is defined
 if (!process.env.ALCHEMY_RPC_URL) {
@@ -57,24 +58,24 @@ const formatBigIntUnits = (value, decimals) => {
         intPart = str.slice(0, len - decimals);
         decPart = str.slice(len - decimals);
     }
-    intPart = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    intPart = intPart.replace(/\\B(?=(\\d{3})+(?!\\d))/g, ',');
     decPart = (decPart || '0').padEnd(2, '0');
     return (isNegative ? '-' : '') + intPart + '.' + decPart;
 };
 
-// Function to query the position and calculate LTV
-async function calculateLTV() {
+// Function to query the position and calculate LTV at the latest block
+async function calculateLTV2() {
   let web3Position, oracleData, marketData;
   
   try {
-    console.log(`Fetching data for LTV calculation at block ${BLOCK_NUMBER}...`);
+    console.log(`Fetching data for LTV calculation at the latest block...`); // Updated log message
     const morphoContract = new web3.eth.Contract(morphoABI, MORPHO_CONTRACT_ADDRESS);
     const oracleContract = new web3.eth.Contract(chainlinkOracleABI, CHAINLINK_ORACLE_ADDRESS);
     
-    // Fetch data concurrently
+    // Fetch data concurrently at the latest block (omit block parameter)
     [web3Position, oracleData, marketData] = await Promise.all([
-      morphoContract.methods.position(CBBTC_USDC_MARKET_ID, USER_ADDRESS).call({}, BLOCK_NUMBER),
-      oracleContract.methods.latestRoundData().call({}, BLOCK_NUMBER),
+      morphoContract.methods.position(CBBTC_USDC_MARKET_ID, USER_ADDRESS).call(), // Removed BLOCK_NUMBER
+      oracleContract.methods.latestRoundData().call(), // Removed BLOCK_NUMBER
       fetchMarketById(CBBTC_USDC_MARKET_ID) // Fetch market data using the imported function
     ]);
 
@@ -110,7 +111,7 @@ async function calculateLTV() {
     console.log('\n--- Raw Data ---');
     console.log('------------------------------------------');
     console.log('Market ID:', CBBTC_USDC_MARKET_ID);
-    console.log('User Address:', USER_ADDRESS);
+    console.log('User Address:', USER_ADDRESS); // Uses hardcoded address
     console.log(`Collateral (Raw): ${positionCollateralRaw.toString()} (${collateralDecimals} decimals)`);
     console.log(`Borrow Shares: ${positionBorrowShares.toString()}`);
     console.log(`Oracle Price (Raw): ${oraclePriceRaw.toString()} (${oraclePriceDecimals} decimals)`);
@@ -191,8 +192,8 @@ async function calculateLTV() {
 
 // Execute the function only if this file is run directly
 if (import.meta.url === `file://${process.argv[1]}`) {
-  calculateLTV();
+  calculateLTV2(); // Updated function call
 }
 
 // Export functions and format utility
-export { calculateLTV, formatLTVAsPercentage }; 
+export { calculateLTV2, formatLTVAsPercentage }; // Updated export 
