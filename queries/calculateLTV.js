@@ -38,121 +38,159 @@ function formatLTVAsPercentage(ltv) {
   return ltv.toFixed(2) + '%';
 }
 
+// Helper function to format BigInt values (similar to supplyBorrowLiq)
+const formatBigIntUnits = (value, decimals) => {
+    if (typeof value !== 'bigint') {
+        try {
+            value = BigInt(value || '0');
+        } catch (e) { value = 0n; }
+    }
+    if (value === 0n) return '0.00';
+
+    let str = value.toString();
+    const isNegative = str.startsWith('-');
+    if (isNegative) str = str.slice(1);
+
+    const len = str.length;
+    let intPart, decPart;
+
+    if (len <= decimals) {
+        intPart = '0';
+        decPart = '0'.repeat(decimals - len) + str;
+    } else {
+        intPart = str.slice(0, len - decimals);
+        decPart = str.slice(len - decimals);
+    }
+    intPart = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    decPart = (decPart || '0').padEnd(2, '0');
+    return (isNegative ? '-' : '') + intPart + '.' + decPart;
+};
+
 // Function to query the position and calculate LTV
 async function calculateLTV() {
+  let web3Position, oracleData, marketData;
+  
   try {
-    // Create contract instances
+    console.log(`Fetching data for LTV calculation at block ${BLOCK_NUMBER}...`);
     const morphoContract = new web3.eth.Contract(morphoABI, MORPHO_CONTRACT_ADDRESS);
     const oracleContract = new web3.eth.Contract(chainlinkOracleABI, CHAINLINK_ORACLE_ADDRESS);
     
-    // Call the position function at the specified block
-    const position = await morphoContract.methods.position(CBBTC_USDC_MARKET_ID, USER_ADDRESS).call({}, BLOCK_NUMBER);
-    
-    // Call the oracle to get the latest price data
-    const oracleData = await oracleContract.methods.latestRoundData().call({}, BLOCK_NUMBER);
-    const oraclePrice = BigInt(oracleData.answer.toString());
-    
-    console.log('Position data for user at block', BLOCK_NUMBER, ':');
+    // Fetch data concurrently
+    [web3Position, oracleData, marketData] = await Promise.all([
+      morphoContract.methods.position(CBBTC_USDC_MARKET_ID, USER_ADDRESS).call({}, BLOCK_NUMBER),
+      oracleContract.methods.latestRoundData().call({}, BLOCK_NUMBER),
+      fetchMarketById(CBBTC_USDC_MARKET_ID) // Fetch market data using the imported function
+    ]);
+
+    // --- Validation --- 
+    if (!web3Position) {
+      throw new Error('Failed to fetch Web3 position data.');
+    }
+    if (!oracleData || !oracleData.answer) {
+      throw new Error('Failed to fetch Oracle data or answer field missing.');
+    }
+    if (!marketData || !marketData.market) {
+      // fetchMarketById logs its own errors, so just throw here
+      throw new Error(`Failed to fetch market data for ID ${CBBTC_USDC_MARKET_ID} from GraphQL.`);
+    }
+    // Check required market fields explicitly
+    if (marketData.market.totalBorrow === undefined || marketData.market.totalBorrowShares === undefined) {
+        throw new Error('Market data from GraphQL is missing required fields (totalBorrow or totalBorrowShares).');
+    }
+
+    // --- Data Processing --- 
+    const market = marketData.market;
+    const oraclePriceRaw = BigInt(oracleData.answer); // Oracle price (e.g., BTC/USD with 8 decimals)
+    const positionCollateralRaw = BigInt(web3Position.collateral); // User's collateral (cbBTC with 8 decimals)
+    const positionBorrowShares = BigInt(web3Position.borrowShares); // User's borrow shares
+    const marketTotalBorrowRaw = BigInt(market.totalBorrow); // Market total borrow (USDC with 6 decimals)
+    const marketTotalBorrowShares = BigInt(market.totalBorrowShares); // Market total borrow shares
+
+    // Get decimals from fetched data, provide defaults
+    const collateralDecimals = market.inputToken?.decimals ?? 8; // Default cbBTC decimals
+    const loanDecimals = market.borrowedToken?.decimals ?? 6; // Default USDC decimals
+    const oraclePriceDecimals = 8; // Chainlink BTC/USD oracle typically uses 8 decimals
+
+    console.log('\n--- Raw Data ---');
     console.log('------------------------------------------');
     console.log('Market ID:', CBBTC_USDC_MARKET_ID);
     console.log('User Address:', USER_ADDRESS);
-    console.log('Collateral Amount:', position.collateral.toString());
-    console.log('Borrow Shares:', position.borrowShares.toString());
-    
-    try {
-      // Fetch market data from GraphQL
-      console.log('\nFetching market data from GraphQL...');
-      const marketData = await fetchMarketById(CBBTC_USDC_MARKET_ID); // Use the same ID as in supplyBorrowLiq.js
-      
-      if (marketData && marketData.market) {
-        const market = marketData.market;
-        
-        // Calculate borrowed amount using the provided formula
-        // Use the totalBorrow and totalBorrowShares from the market data
-        const borrowedAmount = calculateBorrowedAmount(
-          position.borrowShares,
-          market.totalBorrow,
-          market.totalBorrowShares
-        );
-        
-        // Convert values to decimal for calculation
-        const borrowedDecimal = Number(borrowedAmount) / Number(BORROWED_AMOUNT_DECIMALS);
-        const oraclePriceDecimal = Number(oraclePrice) / Number(ORACLE_PRICE_DECIMALS);
-        const collateralDecimal = Number(position.collateral) / Number(COLLATERAL_AMOUNT_DECIMALS);
-        
-        // Calculate collateral value in USD
-        const collateralValueUSD = collateralDecimal * oraclePriceDecimal;
-        
-        // Calculate LTV as borrowedAmount / collateralValueUSD * 100
-        const ltv = (borrowedDecimal / collateralValueUSD) * 100;
-        
-        console.log('\nLTV Calculation:');
-        console.log('------------------------------------------');
-        console.log('BORROWED_AMOUNT:', borrowedDecimal.toFixed(6), 'USDC');
-        console.log('ORACLE_PRICE:', oraclePriceDecimal.toFixed(6), 'USD per BTC');
-        console.log('COLLATERAL_AMOUNT:', collateralDecimal.toFixed(8), 'BTC');
-        console.log('COLLATERAL_VALUE_USD:', collateralValueUSD.toFixed(6), 'USD');
-        console.log('------------------------------------------');
-        console.log('LTV Formula: (BORROWED_AMOUNT / COLLATERAL_VALUE_USD) * 100');
-        console.log('------------------------------------------');
-        console.log('LTV (percentage):', formatLTVAsPercentage(ltv));
-        
-        return ltv;
-      } else {
-        console.log('\nNo market data found with the provided ID');
-        // Fall back to an alternative calculation without market data
-        return calculateLTVWithoutMarketData(position, oraclePrice);
-      }
-    } catch (graphqlError) {
-      console.error('Error fetching market data:', graphqlError.message);
-      console.log('\nFalling back to alternative LTV calculation without market data...');
-      return calculateLTVWithoutMarketData(position, oraclePrice);
-    }
-  } catch (error) {
-    console.error('Error:', error.message);
-    return null;
-  }
-}
+    console.log(`Collateral (Raw): ${positionCollateralRaw.toString()} (${collateralDecimals} decimals)`);
+    console.log(`Borrow Shares: ${positionBorrowShares.toString()}`);
+    console.log(`Oracle Price (Raw): ${oraclePriceRaw.toString()} (${oraclePriceDecimals} decimals)`);
+    console.log(`Market Total Borrow (Raw): ${marketTotalBorrowRaw.toString()} (${loanDecimals} decimals)`);
+    console.log(`Market Total Borrow Shares (Raw): ${marketTotalBorrowShares.toString()}`);
+    console.log('------------------------------------------');
 
-// Function to calculate LTV without market data
-function calculateLTVWithoutMarketData(position, oraclePrice) {
-  // This is a simplified calculation when market data is not available
-  // Use a fixed borrowed amount based on the borrow shares
-  const borrowShares = BigInt(position.borrowShares.toString());
-  
-  // If user has no borrow shares, LTV is 0
-  if (borrowShares === BigInt(0)) {
-    console.log('User has no borrow shares, LTV is 0%');
-    return 0;
+    // --- Calculations --- 
+    
+    // Calculate borrowed amount in loan asset's smallest unit (e.g., USDC wei)
+    const borrowedAmountRaw = calculateBorrowedAmount(
+      positionBorrowShares, 
+      marketTotalBorrowRaw, 
+      marketTotalBorrowShares
+    );
+
+    // If collateral or price is zero, LTV is infinite or zero depending on borrow
+    if (positionCollateralRaw === 0n || oraclePriceRaw === 0n) {
+        console.log('\nCollateral amount or Oracle price is zero.');
+        const ltv = (borrowedAmountRaw > 0n) ? Infinity : 0;
+        console.log(`LTV: ${ltv === Infinity ? 'Infinite' : '0.00%'}`);
+        return ltv; 
+    }
+
+    // Calculate Collateral Value in USD (maintaining precision with BigInt)
+    // (collateralRaw * oraclePriceRaw) / 10^collateralDecimals
+    // We divide by 10^collateralDecimals because oracle price is $/collateral_unit
+    const collateralValueUsdRaw = (positionCollateralRaw * oraclePriceRaw) / (10n ** BigInt(collateralDecimals));
+    // This value has oraclePriceDecimals (8) + loanDecimals (6) - collateralDecimals (8) = 6 decimals effectively (representing USDC wei)
+
+    // Calculate LTV using BigInt math for precision before converting to percentage
+    // LTV = (borrowedAmountRaw * 10^(oraclePriceDecimals)) / collateralValueUsdRaw
+    // Multiply borrow by 10^oraclePriceDecimals to align decimals before division
+    // Result needs scaling by 100 for percentage
+
+    // To prevent overflow and maintain precision, scale borrow amount first
+    // We want (borrowed / 10^loanDec) / (collateralValueUsdRaw / 10^oracleDec)
+    // = (borrowed * 10^oracleDec) / (collateralValueUsd * 10^loanDec)
+    // Let's use floating point for the final percentage calculation for simplicity, 
+    // after getting high-precision raw values.
+
+    const borrowedDecimal = Number(borrowedAmountRaw) / (10 ** loanDecimals); 
+    const collateralValueUSDDecimal = Number(collateralValueUsdRaw) / (10 ** oraclePriceDecimals); // Convert USD value to float
+
+    if (collateralValueUSDDecimal === 0) {
+        console.log('\nCalculated Collateral Value in USD is zero.');
+        const ltv = (borrowedDecimal > 0) ? Infinity : 0;
+        console.log(`LTV: ${ltv === Infinity ? 'Infinite' : '0.00%'}`);
+        return ltv; 
+    }
+    
+    const ltv = (borrowedDecimal / collateralValueUSDDecimal) * 100;
+    
+    console.log('\n--- LTV Calculation ---');
+    console.log('------------------------------------------');
+    console.log(`BORROWED_AMOUNT (Raw): ${borrowedAmountRaw.toString()} (USDC wei)`);
+    console.log(`BORROWED_AMOUNT (Formatted): ${formatBigIntUnits(borrowedAmountRaw, loanDecimals)} USDC`);
+    console.log(`COLLATERAL_VALUE_USD (Raw): ${collateralValueUsdRaw.toString()} (Scaled USD)`);
+    console.log(`COLLATERAL_VALUE_USD (Formatted): $${formatBigIntUnits(collateralValueUsdRaw, oraclePriceDecimals)}`); 
+    console.log('------------------------------------------');
+    console.log('LTV Formula: (Borrowed Amount / Collateral Value USD) * 100');
+    console.log(`LTV Calculation: (${borrowedDecimal.toFixed(6)} / ${collateralValueUSDDecimal.toFixed(6)}) * 100`);
+    console.log('------------------------------------------');
+    console.log('LTV (percentage):', formatLTVAsPercentage(ltv));
+    console.log('------------------------------------------');
+    
+    return ltv;
+
+  } catch (error) {
+    // Log the specific error that occurred
+    console.error('\n--- ERROR ---');
+    console.error('Error during LTV calculation:', error.message);
+    console.error('-------------');
+    // Exit the script on failure
+    process.exit(1); 
   }
-  
-  // Estimate borrowed amount (this is just an example - in production you would need a better approximation)
-  // Here assuming 1 share = 0.001 USDC
-  const borrowedAmount = borrowShares / BigInt(1000);
-  
-  // Convert values to decimal for calculation
-  const borrowedDecimal = Number(borrowedAmount) / Number(BORROWED_AMOUNT_DECIMALS);
-  const oraclePriceDecimal = Number(oraclePrice) / Number(ORACLE_PRICE_DECIMALS);
-  const collateralDecimal = Number(position.collateral) / Number(COLLATERAL_AMOUNT_DECIMALS);
-  
-  // Calculate collateral value in USD
-  const collateralValueUSD = collateralDecimal * oraclePriceDecimal;
-  
-  // Calculate LTV as borrowedAmount / collateralValueUSD * 100
-  const ltv = (borrowedDecimal / collateralValueUSD) * 100;
-  
-  console.log('\nLTV Calculation (Fallback Method):');
-  console.log('------------------------------------------');
-  console.log('BORROWED_AMOUNT (estimated):', borrowedDecimal.toFixed(6), 'USDC');
-  console.log('ORACLE_PRICE:', oraclePriceDecimal.toFixed(6), 'USD per BTC');
-  console.log('COLLATERAL_AMOUNT:', collateralDecimal.toFixed(8), 'BTC');
-  console.log('COLLATERAL_VALUE_USD:', collateralValueUSD.toFixed(6), 'USD');
-  console.log('------------------------------------------');
-  console.log('LTV Formula: (BORROWED_AMOUNT / COLLATERAL_VALUE_USD) * 100');
-  console.log('------------------------------------------');
-  console.log('LTV (percentage):', formatLTVAsPercentage(ltv));
-  
-  return ltv;
 }
 
 // Execute the function only if this file is run directly

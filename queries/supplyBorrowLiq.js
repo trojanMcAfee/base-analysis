@@ -1,3 +1,4 @@
+import { execSync } from 'child_process';
 import fetch from 'node-fetch';
 import { CBBTC_USDC_MARKET_ID, getBaseSubgraphEndpoint } from './state/common.js';
 import dotenv from 'dotenv';
@@ -66,24 +67,22 @@ async function fetchMarketById(marketId) {
         }
         totalSupply
         totalBorrow
-        totalSupplyShares
         totalBorrowShares
-        liquidityAssets: inputTokenBalance
         totalCollateral
       }
     }
   `;
-  
+
   return await makeGraphQLRequest(query);
 }
 
 // Calculate utilization rate
 function calculateUtilization(totalBorrow, totalSupply) {
-  if (!totalBorrow || !totalSupply || totalSupply === '0') {
+  if (!totalBorrow || !totalSupply || BigInt(totalSupply) === 0n) {
     return 0;
   }
   
-  return parseFloat(totalBorrow) / parseFloat(totalSupply);
+  return Number(BigInt(totalBorrow)) / Number(BigInt(totalSupply));
 }
 
 // Function to format LLTV as percentage
@@ -130,6 +129,47 @@ async function getLLTV() {
   }
 }
 
+// Helper function to format BigInt values with decimals and commas
+const formatBigIntUnits = (value, decimals) => {
+    if (typeof value !== 'bigint') {
+        // Attempt conversion if not already BigInt, default to 0n on failure
+        try {
+            value = BigInt(value || '0');
+        } catch (e) {
+            console.warn(`Could not convert value "${value}" to BigInt, using 0.`);
+            value = 0n;
+        }
+    }
+    if (value === 0n) return '0.00'; // Show 0 with decimals for consistency
+
+    let str = value.toString();
+    const isNegative = str.startsWith('-');
+    if (isNegative) str = str.slice(1);
+
+    const len = str.length;
+    let intPart;
+    let decPart;
+
+    if (len <= decimals) {
+        intPart = '0';
+        decPart = '0'.repeat(decimals - len) + str;
+    } else {
+        intPart = str.slice(0, len - decimals);
+        decPart = str.slice(len - decimals);
+    }
+
+    // Add commas to integer part
+    intPart = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+    // Ensure decimal part exists for formatting
+    decPart = decPart || '0';
+    // Optionally trim trailing zeros from decimal part if desired, e.g., decPart.replace(/0+$/, '')
+    // For currency, usually keep fixed decimals:
+    decPart = decPart.padEnd(2, '0'); // Assuming we want at least 2 decimal places shown for currency
+
+    return (isNegative ? '-' : '') + intPart + '.' + decPart;
+};
+
 // Main function to orchestrate all queries
 async function main() {
   try {
@@ -138,31 +178,56 @@ async function main() {
     
     if (marketData.market) {
       const market = marketData.market;
-      const formatValue = (value, decimals) => {
-        if (!value) return 'N/A';
-        if (value === '0') return '0';
-        const numValue = parseFloat(value) / (10 ** (decimals || 0));
-        return numValue.toLocaleString();
-      };
-      
-      const loanDecimals = market.borrowedToken?.decimals || 0;
-      const utilization = calculateUtilization(market.totalBorrow, market.totalSupply);
-      
-      console.log('\ncbBTC/USDC Market Status from The Graph:');
+      const loanDecimals = market.borrowedToken?.decimals ?? 6;
+      const collateralDecimals = market.inputToken?.decimals ?? 8;
+      const loanSymbol = market.borrowedToken?.symbol || 'USDC';
+      const collateralSymbol = market.inputToken?.symbol || 'cbBTC';
+
+      const totalSupplyRaw = BigInt(market.totalSupply || '0');
+      const totalBorrowRaw = BigInt(market.totalBorrow || '0');
+      const totalCollateralRaw = BigInt(market.totalCollateral || '0');
+
+      const baseAvailableLiquidityRaw = totalSupplyRaw - totalBorrowRaw;
+
+      let reallocatableLiquidityRaw = 0n;
+      try {
+          console.log('\nFetching reallocatable liquidity from Morpho Blue API...');
+          const getMarketLiquidityScriptPath = path.resolve(__dirname, 'getMarketLiquidity.js');
+          const scriptOutput = execSync(`node "${getMarketLiquidityScriptPath}"`, { encoding: 'utf-8' });
+          const outputTrimmed = scriptOutput.trim();
+          if (outputTrimmed && !isNaN(outputTrimmed)) {
+             reallocatableLiquidityRaw = BigInt(outputTrimmed);
+             console.log(`Reallocatable Liquidity (API Raw): ${reallocatableLiquidityRaw.toString()}`);
+          } else {
+             console.log(`Received invalid output from getMarketLiquidity.js: "${outputTrimmed}". Using 0.`);
+             reallocatableLiquidityRaw = 0n;
+          }
+      } catch (execError) {
+          console.error(`Error executing getMarketLiquidity.js: ${execError.stderr || execError.message}`);
+          console.log('Could not fetch reallocatable liquidity, assuming 0 for calculation.');
+          reallocatableLiquidityRaw = 0n;
+      }
+
+      const totalAvailableLiquidityRaw = baseAvailableLiquidityRaw + reallocatableLiquidityRaw;
+
+      console.log('\ncbBTC/USDC Market Status:');
       console.log('------------------------------------------');
       console.log(`Market ID: ${market.id}`);
-      console.log(`Total Supply: ${formatValue(market.totalSupply, loanDecimals)} ${market.borrowedToken?.symbol || 'USDC'}`);
-      console.log(`Total Supply Shares: ${formatValue(market.totalSupplyShares, loanDecimals)}`);
-      console.log(`Total Borrow: ${formatValue(market.totalBorrow, loanDecimals)} ${market.borrowedToken?.symbol || 'USDC'}`);
-      console.log(`Total Borrow Shares: ${formatValue(market.totalBorrowShares, loanDecimals)}`);
-      
-      // Calculate available liquidity as Total Supply - Total Borrow
-      const availableLiquidity = parseFloat(market.totalSupply) - parseFloat(market.totalBorrow);
-      console.log(`Available Liquidity (w/o Allocators): ${formatValue(availableLiquidity.toString(), loanDecimals)} ${market.borrowedToken?.symbol || 'USDC'}`);
-      
+      console.log(`Total Supply (Subgraph): ${formatBigIntUnits(totalSupplyRaw, loanDecimals)} ${loanSymbol}`);
+      console.log(`Total Borrow (Subgraph): ${formatBigIntUnits(totalBorrowRaw, loanDecimals)} ${loanSymbol}`);
+      console.log(`Available Liquidity (Subgraph): ${formatBigIntUnits(baseAvailableLiquidityRaw, loanDecimals)} ${loanSymbol}`);
+      console.log(`  ↳ (Total Supply - Total Borrow)`);
+      console.log(`Reallocatable Liquidity (API): ${formatBigIntUnits(reallocatableLiquidityRaw, loanDecimals)} ${loanSymbol}`);
+      console.log('------------------------------------------');
+      console.log(`TOTAL AVAILABLE LIQUIDITY: ${formatBigIntUnits(totalAvailableLiquidityRaw, loanDecimals)} ${loanSymbol}`);
+      console.log('  ↳ (Subgraph Available + API Reallocatable)');
+      console.log('------------------------------------------');
+
+      const utilization = calculateUtilization(market.totalBorrow, market.totalSupply);
       console.log(`Utilization Rate: ${(utilization * 100).toFixed(2)}%`);
       console.log(`Liquidation LTV: ${formatLLTV(market.lltv)}`);
-      console.log(`Total Collateral: ${formatValue(market.totalCollateral, market.inputToken?.decimals || 8)} ${market.inputToken?.symbol || 'cbBTC'}`);
+      console.log(`Total Collateral: ${formatBigIntUnits(totalCollateralRaw, collateralDecimals)} ${collateralSymbol}`);
+
     } else {
       console.log('\nNo market found with the provided ID');
     }
