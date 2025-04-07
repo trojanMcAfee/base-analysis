@@ -57,11 +57,11 @@ async function makeGraphQLRequest(query, variables = {}) {
 // Function to fetch all relevant transaction types for a user
 async function fetchAllUserTransactions(userAddress, limitPerType = 10) {
   const userAddressLower = userAddress.toLowerCase();
-  const transactionTypes = ['deposits', 'withdraws', 'borrows', 'repays', 'liquidates'];
+  const transactionTypes = ['deposits', 'withdraws', 'borrows', 'repays']; // Removed 'liquidates'
   let allTransactions = [];
 
-  const queryTemplate = (type) => `
-    query GetUser${type.charAt(0).toUpperCase() + type.slice(1)}($userAddress: String!, $limit: Int!) {
+  const standardQueryTemplate = (type) => `
+    query GetUserTransactions($userAddress: String!, $limit: Int!) {
       ${type}(
         first: $limit,
         where: { account: $userAddress },
@@ -80,28 +80,72 @@ async function fetchAllUserTransactions(userAddress, limitPerType = 10) {
       }
     }
   `;
+  
+  const liquidateQuery = `
+    query GetUserLiquidations($userAddress: String!, $limit: Int!) {
+      liquidates(
+        first: $limit,
+        where: { liquidatee: $userAddress },
+        orderBy: timestamp,
+        orderDirection: desc
+      ) {
+        id
+        hash
+        blockNumber
+        timestamp
+        liquidator { id } # Fetching id which is the address
+        liquidatee { id } # Fetching id which is the address
+        market {
+          inputToken {
+            symbol
+          }
+        } 
+        # Note: We might need more fields like asset, amount later
+      }
+    }
+  `;
 
   console.log(`Fetching latest ${limitPerType} transactions of each type for user ${userAddress}...`);
 
+  // Fetch standard transaction types
   for (const type of transactionTypes) {
-      try {
-          const query = queryTemplate(type);
-          const variables = { userAddress: userAddressLower, limit: limitPerType };
-          const data = await makeGraphQLRequest(query, variables);
-          
-          if (data && data[type] && data[type].length > 0) {
-              const transactions = data[type].map(tx => ({
-                  ...tx,
-                  type: type.slice(0, -1) // Add type info (e.g., 'deposit')
-              }));
-              allTransactions = allTransactions.concat(transactions);
-              console.log(`  Fetched ${transactions.length} ${type}.`);
-          } else {
-              console.log(`  No ${type} found.`);
-          }
-      } catch (error) {
-          console.warn(`  Could not fetch ${type}: ${error.message}`);
-      }
+    const query = standardQueryTemplate(type);
+    const variables = { userAddress: userAddressLower, limit: limitPerType };
+    console.log(`  Fetching ${type}...`);
+    const data = await makeGraphQLRequest(query, variables);
+    
+    if (data && data[type] && data[type].length > 0) {
+      const transactions = data[type].map(tx => ({
+        ...tx,
+        type: type.slice(0, -1)
+      }));
+      allTransactions = allTransactions.concat(transactions);
+      console.log(`  Fetched ${transactions.length} ${type}.`);
+    } else {
+      console.log(`  No ${type} found.`);
+    }
+  }
+  
+  // Fetch liquidations separately
+  try {
+    console.log(`  Fetching liquidates...`);
+    const liquidateVariables = { userAddress: userAddressLower, limit: limitPerType };
+    const liquidateData = await makeGraphQLRequest(liquidateQuery, liquidateVariables);
+
+    if (liquidateData && liquidateData.liquidates && liquidateData.liquidates.length > 0) {
+      const liquidations = liquidateData.liquidates.map(tx => ({
+        ...tx,
+        type: 'liquidate'
+      }));
+      allTransactions = allTransactions.concat(liquidations);
+      console.log(`  Fetched ${liquidations.length} liquidates.`);
+    } else {
+      console.log(`  No liquidates found involving this user.`);
+    }
+  } catch(error) {
+    // If liquidate query itself fails, re-throw to halt execution as per previous request
+    console.error(`Error fetching liquidations: ${error.message}`);
+    throw error; 
   }
 
   // Sort all collected transactions by timestamp descending
@@ -138,10 +182,8 @@ async function main() {
   try {
     // Hardcode the user address
     const userAddress = '0x9e607f673af8d0Adc840605845F0a5A79924709f';
-    // const blockNumber = process.argv[3] || BLOCK_NUMBER; // Block number context is not used
     
     console.log(`\nFetching transaction history for user: ${userAddress}`);
-    // console.log(`Reference block (not used in query): ${blockNumber}\n`); // Removed as block number is not used
     
     // Step 1: Get all transaction types
     const transactions = await fetchAllUserTransactions(userAddress, 50); // Fetch up to 50 of each type
