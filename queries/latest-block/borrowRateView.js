@@ -100,40 +100,32 @@ async function main() {
         };
 
         // Explicitly log the structures before the call
-        console.log('\n--- Preparing Contract Call ---');
-        console.log('Target Contract (IRM): ', cbBTC_USDC_IRM_ADDRESS);
-        console.log('Market Params:', {
-            loanToken: marketParams.loanToken,
-            collateralToken: marketParams.collateralToken,
-            oracle: marketParams.oracle,
-            irm: marketParams.irm,
-            lltv: marketParams.lltv.toString() // Log LLTV as string
-        });
-        console.log('Market Struct:', {
-            totalSupplyAssets: market.totalSupplyAssets.toString(),
-            totalSupplyShares: market.totalSupplyShares.toString(),
-            totalBorrowAssets: market.totalBorrowAssets.toString(),
-            totalBorrowShares: market.totalBorrowShares.toString(),
-            lastUpdate: market.lastUpdate.toString(),
-            fee: market.fee.toString()
-        });
-        console.log('-----------------------------');
-
         console.log('Calling borrowRateView...');
 
         // 4. Call the borrowRateView function on the IRM contract
         const borrowRatePerSecond = await irmContract.borrowRateView(marketParams, market);
         console.log(`Raw Borrow Rate (per second, 18 decimals): ${borrowRatePerSecond.toString()}`);
 
-        // 5. Calculate and format APY (Using native BigInt and ethers.formatUnits)
-        const borrowApy = (borrowRatePerSecond * SECONDS_PER_YEAR);
+        // const apy = Math.exp((borrowRatePerSecond / 1e18) * SECONDS_PER_YEAR) - 1;
+        // console.log('my apy:', apy);
 
-        // Format as percentage (divide by 1e18)
-        const borrowApyFormatted = ethers.formatUnits(borrowApy, 18); // APY is also 18 decimals
-        const borrowApyPercent = parseFloat(borrowApyFormatted) * 100;
+
+        // 5. Calculate and format APY using continuous compounding formula
+        // APY = e^(rate * time) - 1
+        // Convert rate per second (18 decimals) to a decimal number
+        const ratePerSecondDecimal = parseFloat(ethers.formatUnits(borrowRatePerSecond, 18));
+        
+        // Calculate the exponent term
+        const exponent = ratePerSecondDecimal * Number(SECONDS_PER_YEAR); // Convert SECONDS_PER_YEAR to number
+        
+        // Calculate APY using Math.exp
+        const borrowApyDecimal = Math.exp(exponent) - 1;
+        
+        // Convert to percentage
+        const borrowApyPercent = borrowApyDecimal * 100;
 
         console.log('------------------------------------------');
-        console.log(`Calculated Borrow APY: ${borrowApyPercent.toFixed(4)}%`);
+        console.log(`Calculated Borrow APY (Compounded): ${borrowApyPercent.toFixed(4)}%`);
         console.log('------------------------------------------');
 
     } catch (error) {
