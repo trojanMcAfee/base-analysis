@@ -106,10 +106,6 @@ async function main() {
         const borrowRatePerSecond = await irmContract.borrowRateView(marketParams, market);
         console.log(`Raw Borrow Rate (per second, 18 decimals): ${borrowRatePerSecond.toString()}`);
 
-        // const apy = Math.exp((borrowRatePerSecond / 1e18) * SECONDS_PER_YEAR) - 1;
-        // console.log('my apy:', apy);
-
-
         // 5. Calculate and format APY using continuous compounding formula
         // APY = e^(rate * time) - 1
         // Convert rate per second (18 decimals) to a decimal number
