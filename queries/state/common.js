@@ -12,6 +12,7 @@ export const VIRTUAL_ASSETS = BigInt(1);
 export const BORROWED_AMOUNT_DECIMALS = BigInt(10) ** BigInt(6); // 1e6
 export const ORACLE_PRICE_DECIMALS = BigInt(10) ** BigInt(8);    // 1e8
 export const COLLATERAL_AMOUNT_DECIMALS = BigInt(10) ** BigInt(8); // 1e8
+export const LLTV = BigInt(860000000000000000);
 
 // Contract addresses
 export const MORPHO_CONTRACT_ADDRESS = '0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb';

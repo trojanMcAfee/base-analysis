@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Script to analyze Morpho positions on Base chain",
   "main": "queries/testSubgraph.js",
+  "type": "module",
   "scripts": {
     "test": "node queries/testSubgraph.js"
   },
