@@ -10,6 +10,7 @@ import {
 } from '../state/common.js';
 import { fetchMarketDetails } from './supplyBorrowLiq2.js';
 import { irmAbi } from '../state/abis.js'; // Import the new irmAbi
+import { calculateUtilization } from '../supplyBorrowLiq.js'; // Import the utilization function
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -106,22 +107,27 @@ async function main() {
         const borrowRatePerSecond = await irmContract.borrowRateView(marketParams, market);
         console.log(`Raw Borrow Rate (per second, 18 decimals): ${borrowRatePerSecond.toString()}`);
 
+        // Calculate Utilization Rate using the imported function
+        const utilization = calculateUtilization(market.totalBorrowAssets, market.totalSupplyAssets);
+        const utilizationPercent = utilization * 100;
+
         // 5. Calculate and format APY using continuous compounding formula
         // APY = e^(rate * time) - 1
         // Convert rate per second (18 decimals) to a decimal number
         const ratePerSecondDecimal = parseFloat(ethers.formatUnits(borrowRatePerSecond, 18));
-        
+
         // Calculate the exponent term
         const exponent = ratePerSecondDecimal * Number(SECONDS_PER_YEAR); // Convert SECONDS_PER_YEAR to number
-        
+
         // Calculate APY using Math.exp
         const borrowApyDecimal = Math.exp(exponent) - 1;
-        
+
         // Convert to percentage
         const borrowApyPercent = borrowApyDecimal * 100;
 
         console.log('------------------------------------------');
         console.log(`Calculated Borrow APY (Compounded): ${borrowApyPercent.toFixed(4)}%`);
+        console.log(`Current Utilization Rate: ${utilizationPercent.toFixed(2)}%`); // Log the utilization rate
         console.log('------------------------------------------');
 
     } catch (error) {

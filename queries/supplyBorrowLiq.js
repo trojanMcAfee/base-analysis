@@ -239,7 +239,7 @@ async function main() {
 }
 
 // Export functions to be used in other modules
-export { fetchMarketById, main, formatLLTV, getLLTV };
+export { fetchMarketById, main, formatLLTV, getLLTV, calculateUtilization };
 
 // Execute the main function if this file is run directly
 if (import.meta.url === `file://${process.argv[1]}`) {
