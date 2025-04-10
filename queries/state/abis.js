@@ -129,4 +129,9 @@ export const irmAbi = [
         "stateMutability": "view",
         "type": "function"
     }
+];
+
+// Interest Rate Model (IRM) ABI specifically for rateAtTarget
+export const irmRateAtTargetAbi = [
+    'function rateAtTarget(bytes32 id) external view returns (int256)'
 ]; 

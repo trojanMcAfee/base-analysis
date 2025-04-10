@@ -1,16 +1,12 @@
 import { ethers } from 'ethers';
 import dotenv from 'dotenv';
 import { cbBTC_USDC_IRM_ADDRESS, CBBTC_USDC_MARKET_ID } from './state/common.js';
+import { irmRateAtTargetAbi } from './state/abis.js'; // Import the ABI
 
 dotenv.config({ path: '../.env.private' }); // Adjust path if necessary
 
 const SECONDS_PER_YEAR = 31536000;
 const TARGET_UTILIZATION = 90; // The utilization percent where rateAtTarget applies
-
-// ABI for the rateAtTarget function
-const irmAbi = [
-    'function rateAtTarget(bytes32 id) external view returns (int256)'
-];
 
 async function main() {
     const providerUrl = process.env.BASE_RPC_URL;
@@ -20,7 +16,8 @@ async function main() {
     }
 
     const provider = new ethers.JsonRpcProvider(providerUrl);
-    const irmContract = new ethers.Contract(cbBTC_USDC_IRM_ADDRESS, irmAbi, provider);
+    // Use the imported ABI
+    const irmContract = new ethers.Contract(cbBTC_USDC_IRM_ADDRESS, irmRateAtTargetAbi, provider);
 
     try {
         // 1 & 2: Get the rate at target utilization (90%)

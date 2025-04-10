@@ -124,6 +124,26 @@ This script calculates the average daily borrowing rate (APY) for the cbBTC/USDC
 node borrowRate24h_A.js
 ```
 
+## uChart.js
+
+This script calculates and displays the estimated Annual Percentage Rate (APR) for borrowing in the cbBTC/USDC market at various utilization levels based on a piecewise linear model.
+
+### Key Features
+- Connects to the Base network using `ethers.js` and the `BASE_RPC_URL` environment variable.
+- Calls the `rateAtTarget(marketId)` function on the market's Interest Rate Model (IRM) contract (`cbBTC_USDC_IRM_ADDRESS` from `common.js`) to get the borrow rate at the target utilization point (typically 90%).
+- Calculates the APR (`N`) at the target utilization using the formula: `(Math.exp((borrowRate / 1e18) * SECONDS_PER_YEAR) - 1) * 100`. **Note:** The script assumes the rate from `rateAtTarget` is in 1e18 decimals as per the user's formula specification, although Morpho IRM rates are often in Ray (1e27).
+- Derives the APR at 0% utilization as `N / 4` and at 100% utilization as `N * 4`.
+- Linearly interpolates the APR for each utilization percentage from 1% to 100% based on two segments: 0% to the target utilization, and the target utilization to 100%.
+- Logs the calculated APRs for 0%, the target utilization, 100%, and then each integer percentage from 1% to 100%.
+
+### Usage
+
+Ensure the `BASE_RPC_URL` environment variable is set in your `.env.private` file.
+
+```bash
+node uChart.js
+```
+
 ## calculateLTV.js
 
 This script calculates the Loan-to-Value (LTV) ratio for a specific user's position in the cbBTC/USDC market.
