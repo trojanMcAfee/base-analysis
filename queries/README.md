@@ -107,6 +107,23 @@ This script calculates the average borrowing rate for the cbBTC/USDC market over
 node borrowRate24h.js
 ```
 
+## borrowRate24h_A.js
+
+This script calculates the average daily borrowing rate (APY) for the cbBTC/USDC market over a defined historical period using the Morpho GraphQL API.
+
+### Key Features
+- Queries the Morpho GraphQL API for historical daily borrow APY data.
+- Uses a defined `startTimestamp` and `endTimestamp` within the script to specify the period.
+- Fetches data points with a `DAY` interval.
+- Calculates the average APY from the returned daily data points.
+- Displays the calculated average daily borrowing rate as a percentage.
+
+### Usage
+
+```bash
+node borrowRate24h_A.js
+```
+
 ## calculateLTV.js
 
 This script calculates the Loan-to-Value (LTV) ratio for a specific user's position in the cbBTC/USDC market.
